@@ -72,37 +72,13 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 #define DIM 3u
 #define SAMPLES 6000u
+#define K 100u
 
 
 int main(int argc, char **argv)
 {
-    KMeans<float>::MatrixXt mat(DIM, SAMPLES);
-
-    NormalDistGenerator<float> nd;
-    for (uint i = 0; i < 2000; ++i)
-    {
-        for (uint k = 0; k < DIM; ++k)
-        {
-            mat.col(i)(k) = nd.rand();
-        }
-    }
-    for (uint i = 2000; i < 4000; ++i)
-    {
-        for (uint k = 0; k < DIM; ++k)
-        {
-            mat.col(i)(k) = nd.rand() + 5.0f;
-        }
-    }
-    for (uint i = 4000; i < 6000; ++i)
-    {
-        for (uint k = 0; k < DIM; ++k)
-        {
-            mat.col(i)(k) = nd.rand() + 10.0f;
-        }
-    }
+    KMeans<float>::MatrixXt mat = KMeans<float>::MatrixXt::Random(DIM, SAMPLES);
     dumpMatrix(mat, "matrix.txt");
-
-
 
     WhiteningTransform<float> wt(DIM);
     PCAWhitening<float> pca(DIM, 0.0f, 0.0f);
@@ -111,7 +87,13 @@ int main(int argc, char **argv)
 
     dumpMatrix(mat, "white.txt");
 
+    KMeans<float> km(DIM, K, 10 * K);
 
+    KMeans<float>::MatrixXt centroids(DIM, K);
+    std::vector<uint> freq;
+    km.compute(&centroids, &freq, mat);
+
+    dumpMatrix(centroids, "centroids.txt");
 
     return 0;
 }
