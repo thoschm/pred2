@@ -64,19 +64,19 @@ public:
         // and normalize the resulting code vector
         for (uint i = 0; i < dsize; ++i)
         {
-            // compute euclidean distance to each codeword
+            // compute euclidean distance to each codeword and apply rbf
             NumericalType sum = (NumericalType)0.0;
             for (uint k = 0; k < wsize; ++k)
             {
                 const NumericalType dist = (indata.col(i) - words.col(k)).norm();
                 vec(k) = std::exp(-mSigma * dist);
                 sum += vec(k);
-                std::cerr << "word " << k << ", " << dist << "   " << std::exp(-mSigma * dist) << std::endl;
+                //std::cerr << "word " << k << ", " << dist << "   " << std::exp(-mSigma * dist) << std::endl;
             }
             // prevent instabilities
             if (sum < (NumericalType)1e-5)
             {
-                std::cerr << "RBFHistogram: SKIPPED SAMPLE (reduce gamma if this happens too often)\n";
+                std::cerr << "RBFHistogram: SKIPPED SAMPLE (reduce sigma if this happens too often)\n";
                 continue;
             }
             // normalize and add to histogram

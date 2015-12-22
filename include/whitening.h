@@ -115,7 +115,7 @@ public:
 
 private:
 
-    // whitening based in input data
+    // whitening based on input data
     void whiten(WhiteningTransform<NumericalType> *wt, const MatrixXt &indata)
     {
         // mean and cov
