@@ -1,6 +1,7 @@
 
 #include <kmeans.h>
 #include <whitening.h>
+#include <histogram.h>
 #include <fstream>
 
 
@@ -72,7 +73,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 #define DIM 3u
 #define SAMPLES 6000u
-#define K 100u
+#define K 5u
 
 
 int main(int argc, char **argv)
@@ -94,6 +95,11 @@ int main(int argc, char **argv)
     km.compute(&centroids, &freq, mat);
 
     dumpMatrix(centroids, "centroids.txt");
+
+    RBFHistogram<float> rbf(DIM, 1.0f);
+    RBFHistogram<float>::VectorXt hist(K);
+    rbf.compute(&hist, mat, centroids);
+    std::cerr << hist << std::endl;
 
     return 0;
 }
