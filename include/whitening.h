@@ -59,7 +59,7 @@ public:
     // ctor
     PCAWhitening(const uint dim,
                  const NumericalType epsilon = (NumericalType)0.0,
-                 const NumericalType smallestEVPercentage = (NumericalType)5.0) : mDim(dim),
+                 const NumericalType smallestEVPercentage = (NumericalType)0.0) : mDim(dim),
                                                                                   mEpsilon(epsilon),
                                                                                   mEVPercentage(smallestEVPercentage)
     { }
@@ -155,7 +155,7 @@ private:
             }
         }
 
-        // precompute scale factors
+        // compute scaling factors
         for (uint k = 0; k < mDim; ++k)
         {
             if ((int)k <= remv)
@@ -166,7 +166,7 @@ private:
             scaleFactors(k) = (NumericalType)1.0 / std::sqrt(d(k) + mEpsilon);
             if (std::isnan(scaleFactors(k)) || std::isinf(scaleFactors(k)))
             {
-                std::cerr << "PCAWhitening: some dimensions are strongly underrepresented, choose a larger epsilon value.\n";
+                std::cerr << "PCAWhitening: some dimensions are underrepresented, choose a larger epsilon value.\n";
                 return;
             }
         }

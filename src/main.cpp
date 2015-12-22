@@ -70,7 +70,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 
-#define DIM 2u
+#define DIM 3u
 #define SAMPLES 6000u
 
 
@@ -81,21 +81,21 @@ int main(int argc, char **argv)
     NormalDistGenerator<float> nd;
     for (uint i = 0; i < 2000; ++i)
     {
-        for (uint k = 0; k < 2u; ++k)
+        for (uint k = 0; k < DIM; ++k)
         {
             mat.col(i)(k) = nd.rand();
         }
     }
     for (uint i = 2000; i < 4000; ++i)
     {
-        for (uint k = 0; k < 2u; ++k)
+        for (uint k = 0; k < DIM; ++k)
         {
             mat.col(i)(k) = nd.rand() + 5.0f;
         }
     }
     for (uint i = 4000; i < 6000; ++i)
     {
-        for (uint k = 0; k < 2u; ++k)
+        for (uint k = 0; k < DIM; ++k)
         {
             mat.col(i)(k) = nd.rand() + 10.0f;
         }
@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 
 
     WhiteningTransform<float> wt(DIM);
-    PCAWhitening<float> pca(DIM);
+    PCAWhitening<float> pca(DIM, 0.0f, 0.0f);
     pca.computeTransform(&wt, mat);
     pca.applyTransformInPlace(&mat, wt);
 
