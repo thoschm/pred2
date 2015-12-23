@@ -59,9 +59,9 @@ public:
     // ctor
     PCAWhitening(const uint dim,
                  const NumericalType epsilon = (NumericalType)0.0,
-                 const NumericalType smallestEVPercentage = (NumericalType)0.0) : mDim(dim),
-                                                                                  mEpsilon(epsilon),
-                                                                                  mEVPercentage(smallestEVPercentage)
+                 const NumericalType smallestEVPercentage = (NumericalType)-1.0) : mDim(dim),
+                                                                                   mEpsilon(epsilon),
+                                                                                   mEVPercentage(smallestEVPercentage)
     { }
 
     // compute

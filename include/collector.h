@@ -109,8 +109,15 @@ private:
         std::cerr << "vectors seen: " << cnt << std::endl;
 
         // begin whitening
+        PCAWhitening<NumericalType> pca(mFWindow);
+        WhiteningTransform<NumericalType> wt(mFWindow);
+        pca.computeTransform(&wt, features);
+        pca.applyTransformInPlace(&features, wt);
 
-
+        // clustering
+        KMeans<NumericalType> kmeans(mFWindow, mK, 100u * mK);
+        std::vector<uint> freq;
+        kmeans.compute(words, &freq, features);
     }
 
     // compute min max normalization
