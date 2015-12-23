@@ -74,10 +74,10 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 
-#define SAMPLES 1000u
+#define SAMPLES 50u
 #define K 5u
-#define WINDOW 20u
-#define FEATURE 5u
+#define WINDOW 10u
+#define FEATURE 6u
 
 
 int main(int argc, char **argv)
@@ -85,6 +85,9 @@ int main(int argc, char **argv)
     std::vector<float> indata;
     for (uint i = 0; i < SAMPLES; ++i)
     {
+        /*indata.push_back(0.0);
+        indata.push_back(0.5);
+        indata.push_back(1.0);*/
         indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
     }
 

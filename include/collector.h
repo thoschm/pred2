@@ -35,9 +35,10 @@ public:
 
     // ctor
     SeriesCollector(const uint seriesWindow,
-                    const uint featureWindow,
+                    const uint featureSize,
                     const uint codeWords) : mSWindow(seriesWindow),
-                                            mFWindow(featureWindow),
+                                            mFWindow(featureSize - 1u),
+                                            mDim(featureSize),
                                             mK(codeWords)
     { }
 
@@ -52,9 +53,9 @@ public:
             std::cerr << "SeriesCollector: need more samples for given window size\n";
             return;
         }
-        if (words->rows() != mFWindow)
+        if (words->rows() != mDim)
         {
-            std::cerr << "SeriesCollector: output matrix row count must be equal to feature window size\n";
+            std::cerr << "SeriesCollector: output matrix row count must be equal to feature dim\n";
             return;
         }
         if (words->cols() != mK)
@@ -65,6 +66,11 @@ public:
         if (mSWindow < mFWindow)
         {
             std::cerr << "SeriesCollector: feature window should be much smaller than series window\n";
+            return;
+        }
+        if (mDim < 2u)
+        {
+            std::cerr << "SeriesCollector: need more dimensions\n";
             return;
         }
 
@@ -81,11 +87,12 @@ private:
 
         // this will need lots of memory
         const uint cols = (slimit + 1u) * (flimit + 1u);
-        MatrixXt features(mFWindow, cols);
+        MatrixXt features(mDim, cols);
         std::cerr << "columns allocated: " << cols << std::endl;
 
         // collect
         uint cnt = 0;
+        const NumericalType normIndex = (NumericalType)1.0 / flimit;
         for (uint i = 0; i <= slimit; ++i)
         {
             // normalze current window to 0 - 1
@@ -102,20 +109,23 @@ private:
                     features(f, cnt) = scale * (indata[i + k + f] - vmin);
                     //std::cerr << i + k + f << " ";
                 }
+                features(mFWindow, cnt) = k * normIndex;
                 ++cnt;
                 //std::cerr << std::endl;
             }
         }
         std::cerr << "vectors seen: " << cnt << std::endl;
+        //std::cerr << features.transpose() << std::endl;
 
         // begin whitening
-        PCAWhitening<NumericalType> pca(mFWindow);
-        WhiteningTransform<NumericalType> wt(mFWindow);
+        PCAWhitening<NumericalType> pca(mDim);
+        WhiteningTransform<NumericalType> wt(mDim);
         pca.computeTransform(&wt, features);
         pca.applyTransformInPlace(&features, wt);
+        std::cerr << features.transpose() << std::endl;
 
         // clustering
-        KMeans<NumericalType> kmeans(mFWindow, mK, 100u * mK);
+        KMeans<NumericalType> kmeans(mDim, mK, 100u * mK);
         std::vector<uint> freq;
         kmeans.compute(words, &freq, features);
     }
@@ -154,6 +164,7 @@ private:
     // vars
     uint mSWindow,
          mFWindow,
+         mDim,
          mK;
 };
 
