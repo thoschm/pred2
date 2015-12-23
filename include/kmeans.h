@@ -65,11 +65,13 @@ public:
         }
 
         // compute initial seeds
+        std::cerr << "computing seeds..." << std::endl;
         seeds(centroids, indata);
 
         // actual k means
         freq->clear();
         freq->resize(mK, 0);
+        std::cerr << "starting k-means..." << std::endl;
         kmeans(centroids, freq, indata);
     }
 

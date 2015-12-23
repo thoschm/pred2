@@ -125,13 +125,19 @@ private:
         // begin whitening
         PCAWhitening<NumericalType> pca(mDim);
         pca.computeTransform(wt, features);
+        std::cout << "apply whitening..." << std::endl;
         pca.applyTransformInPlace(&features, *wt);
         //std::cerr << features.transpose() << std::endl;
 
         // clustering
-        KMeans<NumericalType> kmeans(mDim, mK, 100u * mK);
+        std::cout << "clustering..." << std::endl;
+        KMeans<NumericalType> kmeans(mDim, mK, 10u * mK);
         std::vector<uint> freq;
         kmeans.compute(words, &freq, features);
+        for (uint i = 0; i < mK; ++i)
+        {
+            std::cerr << "cluster " << i << ": " << freq[i] << " supporters" << std::endl;
+        }
     }
 
     // compute min max normalization

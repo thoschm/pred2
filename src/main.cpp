@@ -75,9 +75,9 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 #define SAMPLES 1000u
-#define K 100u
+#define K 20u
 #define WINDOW 500u
-#define FEATURE 101u
+#define FEATURE 50u
 
 
 int main(int argc, char **argv)
@@ -95,6 +95,8 @@ int main(int argc, char **argv)
     WhiteningTransform<float> wt(FEATURE);
     collector.codeWords(&words, &wt, indata);
     std::cerr << words.transpose() << std::endl << std::endl;
+
+
     PCAWhitening<float> pca(FEATURE);
     pca.inverseTransformInPlace(&words, wt);
     std::cerr << words.transpose() << std::endl;
@@ -110,6 +112,18 @@ int main(int argc, char **argv)
         ofs << std::endl;
     }
     ofs.close();
+/*
+    std::ofstream ofs;
+    ofs.open("words.txt", std::ios::out);
+    for (uint k = 0; k < K; ++k)
+    {
+        for (uint l = 0; l < FEATURE; ++l)
+        {
+            ofs << l << " " << words(l, k) << std::endl;
+        }
+        ofs << std::endl;
+    }
+    ofs.close();*/
 
 /*
     NormalDistGenerator<float> n;
