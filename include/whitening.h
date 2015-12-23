@@ -59,9 +59,9 @@ public:
     // ctor
     PCAWhitening(const uint dim,
                  const NumericalType epsilon = (NumericalType)0.0,
-                 const NumericalType smallestEVPercentage = (NumericalType)0.1) : mDim(dim),
-                                                                                  mEpsilon(epsilon),
-                                                                                  mEVPercentage(smallestEVPercentage)
+                 const NumericalType smallestEVPercentage = (NumericalType)0.91) : mDim(dim),
+                                                                                   mEpsilon(epsilon),
+                                                                                   mEVPercentage(smallestEVPercentage)
     { }
 
     // compute
@@ -147,7 +147,7 @@ public:
                     x(k) = (*data)(k, i) / wt.scaling(k);
                 }
             }
-            std::cerr << x.transpose() << std::endl;
+            //std::cerr << x.transpose() << std::endl;
             data->col(i) = iirot * x + wt.mean;
         }
     }

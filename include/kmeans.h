@@ -119,12 +119,12 @@ private:
                 }
                 //std::cerr << "centroid " << s << ": " << cmp.transpose() << ", supporters = " << f << ", err = " << std::sqrt(err) << std::endl;
             }
-            //std::cerr << std::endl;
+            std::cerr << "k-means round: " << rounds << std::endl;
 
             // nothing changed?
             if (!change) break;
         }
-        std::cerr << rounds << " rounds of k-means completed\n";
+        std::cerr << "done." << std::endl;
     }
 
     // select initial seed configuration

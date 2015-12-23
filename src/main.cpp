@@ -74,15 +74,15 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 
-#define SAMPLES 10000u
-#define K 10u
-#define WINDOW 1000u
-#define FEATURE 11u
+#define SAMPLES 1000u
+#define K 100u
+#define WINDOW 500u
+#define FEATURE 101u
 
 
 int main(int argc, char **argv)
 {
-    /*
+
     std::vector<float> indata;
     for (uint i = 0; i < SAMPLES; ++i)
     {
@@ -92,9 +92,26 @@ int main(int argc, char **argv)
     SeriesCollector<float> collector(WINDOW, FEATURE, K);
     SeriesCollector<float>::MatrixXt words(FEATURE, K);
 
-    collector.codeWords(&words, indata);
-*/
+    WhiteningTransform<float> wt(FEATURE);
+    collector.codeWords(&words, &wt, indata);
+    std::cerr << words.transpose() << std::endl << std::endl;
+    PCAWhitening<float> pca(FEATURE);
+    pca.inverseTransformInPlace(&words, wt);
+    std::cerr << words.transpose() << std::endl;
 
+    std::ofstream ofs;
+    ofs.open("words.txt", std::ios::out);
+    for (uint k = 0; k < K; ++k)
+    {
+        for (uint l = 0; l < FEATURE - 1u; ++l)
+        {
+            ofs << (words(FEATURE - 1u, k) * (WINDOW - (FEATURE - 1u))) + l << " " << words(l, k) << std::endl;
+        }
+        ofs << std::endl;
+    }
+    ofs.close();
+
+/*
     NormalDistGenerator<float> n;
     KMeans<float>::MatrixXt mat(3, 2000);
     for (uint i = 0; i < 1000u; ++i)
@@ -120,6 +137,6 @@ int main(int argc, char **argv)
     pca.applyTransformInPlace(&mat, wt);
     dumpMatrix(mat, "white.txt");
     pca.inverseTransformInPlace(&mat, wt);
-    dumpMatrix(mat, "inv.txt");
+    dumpMatrix(mat, "inv.txt");*/
     return 0;
 }

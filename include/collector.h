@@ -43,7 +43,7 @@ public:
     { }
 
     // compute code words
-    void codeWords(MatrixXt *words, const std::vector<NumericalType> &indata)
+    void codeWords(MatrixXt *words, WhiteningTransform<NumericalType> *wt, const std::vector<NumericalType> &indata)
     {
         words->setZero();
 
@@ -73,14 +73,19 @@ public:
             std::cerr << "SeriesCollector: need more dimensions\n";
             return;
         }
+        if (wt->dim != mDim)
+        {
+            std::cerr << "SeriesCollector: whitening transform has invalid dimensions\n";
+            return;
+        }
 
-        collect(words, indata);
+        collect(words, wt, indata);
     }
 
 
 private:
     // extract features and compute code words
-    void collect(MatrixXt *words, const std::vector<NumericalType> &indata)
+    void collect(MatrixXt *words, WhiteningTransform<NumericalType> *wt, const std::vector<NumericalType> &indata)
     {
         const uint slimit = indata.size() - mSWindow, // series window
                    flimit = mSWindow - mFWindow;      // feature window
@@ -119,9 +124,8 @@ private:
 
         // begin whitening
         PCAWhitening<NumericalType> pca(mDim);
-        WhiteningTransform<NumericalType> wt(mDim);
-        pca.computeTransform(&wt, features);
-        pca.applyTransformInPlace(&features, wt);
+        pca.computeTransform(wt, features);
+        pca.applyTransformInPlace(&features, *wt);
         //std::cerr << features.transpose() << std::endl;
 
         // clustering
