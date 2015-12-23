@@ -49,6 +49,9 @@ public:
                  std::vector<uint> *freq,
                  const MatrixXt &indata)
     {
+        centroids->setZero();
+        freq->clear();
+
         // some checks
         if (indata.rows() != mDim)
         {

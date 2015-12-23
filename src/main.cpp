@@ -1,8 +1,11 @@
 
+
+#define EIGEN_INITIALIZE_MATRICES_BY_NAN
 #include <kmeans.h>
 #include <whitening.h>
 #include <histogram.h>
 #include <fstream>
+#include <collector.h>
 
 
 using namespace BOF;
@@ -71,35 +74,26 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 
-#define DIM 3u
-#define SAMPLES 6000u
+#define SAMPLES 20u
 #define K 5u
+#define WINDOW 10u
+#define FEATURE 3u
 
 
 int main(int argc, char **argv)
 {
-    KMeans<float>::MatrixXt mat = KMeans<float>::MatrixXt::Random(DIM, SAMPLES);
-    dumpMatrix(mat, "matrix.txt");
+    std::vector<float> indata;
+    for (uint i = 0; i < SAMPLES; ++i)
+    {
+        indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+    }
 
-    WhiteningTransform<float> wt(DIM);
-    PCAWhitening<float> pca(DIM, 0.0f, 0.0f);
-    pca.computeTransform(&wt, mat);
-    pca.applyTransformInPlace(&mat, wt);
+    SeriesCollector<float> collector(WINDOW, FEATURE, K);
+    SeriesCollector<float>::MatrixXt words(FEATURE, K);
 
-    dumpMatrix(mat, "white.txt");
+    collector.codeWords(&words, indata);
 
-    KMeans<float> km(DIM, K, 10 * K);
 
-    KMeans<float>::MatrixXt centroids(DIM, K);
-    std::vector<uint> freq;
-    km.compute(&centroids, &freq, mat);
-
-    dumpMatrix(centroids, "centroids.txt");
-
-    RBFHistogram<float> rbf(DIM, 1.0f);
-    RBFHistogram<float>::VectorXt hist(K);
-    rbf.compute(&hist, mat, centroids);
-    std::cerr << hist << std::endl;
 
     return 0;
 }
