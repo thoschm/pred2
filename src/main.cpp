@@ -82,12 +82,10 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 int main(int argc, char **argv)
 {
+    /*
     std::vector<float> indata;
     for (uint i = 0; i < SAMPLES; ++i)
     {
-        /*indata.push_back(0.0);
-        indata.push_back(0.5);
-        indata.push_back(1.0);*/
         indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
     }
 
@@ -95,8 +93,33 @@ int main(int argc, char **argv)
     SeriesCollector<float>::MatrixXt words(FEATURE, K);
 
     collector.codeWords(&words, indata);
+*/
+
+    NormalDistGenerator<float> n;
+    KMeans<float>::MatrixXt mat(3, 2000);
+    for (uint i = 0; i < 1000u; ++i)
+    {
+        for (uint k = 0; k < mat.rows(); ++k)
+        {
+            mat(k, i) = n.rand();
+        }
+    }
+    for (uint i = 1000; i < 2000u; ++i)
+    {
+        for (uint k = 0; k < mat.rows(); ++k)
+        {
+            mat(k, i) = n.rand() + 10.0f;
+        }
+    }
 
 
-
+    dumpMatrix(mat, "mat.txt");
+    PCAWhitening<float> pca(3);
+    WhiteningTransform<float> wt(3);
+    pca.computeTransform(&wt, mat);
+    pca.applyTransformInPlace(&mat, wt);
+    dumpMatrix(mat, "white.txt");
+    pca.inverseTransformInPlace(&mat, wt);
+    dumpMatrix(mat, "inv.txt");
     return 0;
 }

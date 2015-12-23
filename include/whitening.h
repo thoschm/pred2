@@ -113,6 +113,46 @@ public:
     }
 
 
+    // compute from given transform
+    void inverseTransformInPlace(MatrixXt *data, const WhiteningTransform<NumericalType> &wt)
+    {
+        // checks
+        if (data->rows() != mDim)
+        {
+            std::cerr << "PCAWhitening: expecting input matrix to have the following dimensions: m(rows) = dim, n(cols) = number of input vectors\n";
+            return;
+        }
+        if (wt.dim != mDim)
+        {
+            std::cerr << "PCAWhitening: WhiteningTransform container has invalid dimensions\n";
+            return;
+        }
+        if (!wt.successful)
+        {
+            std::cerr << "PCAWhitening: WhiteningTransform is invalid\n";
+            return;
+        }
+
+        // now apply transform
+        const uint cols = data->cols();
+        VectorXt x(mDim);
+        MatrixXt iirot = wt.irot.transpose();
+        for (uint i = 0; i < cols; ++i)
+        {
+            for (uint k = 0; k < mDim; ++k)
+            {
+                x(k) = (NumericalType)0.0;
+                if (wt.scaling(k) > (NumericalType)1e-5)
+                {
+                    x(k) = (*data)(k, i) / wt.scaling(k);
+                }
+            }
+            std::cerr << x.transpose() << std::endl;
+            data->col(i) = iirot * x + wt.mean;
+        }
+    }
+
+
 private:
 
     // whitening based on input data
