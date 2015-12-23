@@ -74,10 +74,10 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 
-#define SAMPLES 50u
-#define K 5u
-#define WINDOW 10u
-#define FEATURE 6u
+#define SAMPLES 10000u
+#define K 10u
+#define WINDOW 1000u
+#define FEATURE 11u
 
 
 int main(int argc, char **argv)

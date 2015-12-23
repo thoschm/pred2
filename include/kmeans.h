@@ -117,9 +117,9 @@ private:
                 {
                     change = true;
                 }
-                std::cerr << "centroid " << s << ": " << cmp.transpose() << ", supporters = " << f << ", err = " << std::sqrt(err) << std::endl;
+                //std::cerr << "centroid " << s << ": " << cmp.transpose() << ", supporters = " << f << ", err = " << std::sqrt(err) << std::endl;
             }
-            std::cerr << std::endl;
+            //std::cerr << std::endl;
 
             // nothing changed?
             if (!change) break;

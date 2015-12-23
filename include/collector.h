@@ -122,7 +122,7 @@ private:
         WhiteningTransform<NumericalType> wt(mDim);
         pca.computeTransform(&wt, features);
         pca.applyTransformInPlace(&features, wt);
-        std::cerr << features.transpose() << std::endl;
+        //std::cerr << features.transpose() << std::endl;
 
         // clustering
         KMeans<NumericalType> kmeans(mDim, mK, 100u * mK);
