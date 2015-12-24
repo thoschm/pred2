@@ -86,7 +86,7 @@ int main(int argc, char **argv)
     std::vector<float> indata;
     for (uint i = 0; i < SAMPLES; ++i)
     {
-        indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)));// + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
     }
 
     SeriesCollector<float> collector(WINDOW, FEATURE, K);
