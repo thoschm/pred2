@@ -74,10 +74,10 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 
-#define SAMPLES 1000u
+#define SAMPLES 500u
 #define K 20u
-#define WINDOW 500u
-#define FEATURE 50u
+#define WINDOW 10u
+#define FEATURE 6u
 
 
 int main(int argc, char **argv)
@@ -86,7 +86,7 @@ int main(int argc, char **argv)
     std::vector<float> indata;
     for (uint i = 0; i < SAMPLES; ++i)
     {
-        indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)));// + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
     }
 
     SeriesCollector<float> collector(WINDOW, FEATURE, K);
@@ -96,12 +96,24 @@ int main(int argc, char **argv)
     collector.codeWords(&words, &wt, indata);
     std::cerr << words.transpose() << std::endl << std::endl;
 
+    SeriesCollector<float>::VectorXt hist(K);
+    collector.signature(&hist, wt, indata, words, 0);
+    std::cerr << "signature:\n" << hist.transpose() << std::endl;
+    collector.signature(&hist, wt, indata, words, 100);
+    std::cerr << "signature:\n" << hist.transpose() << std::endl;
+
+
+    std::ofstream ofs;
+/*    ofs.open("centroids.txt", std::ios::out);
+    ofs << words.transpose() << std::endl;
+    ofs.close();
+*/
+
 
     PCAWhitening<float> pca(FEATURE);
     pca.inverseTransformInPlace(&words, wt);
     std::cerr << words.transpose() << std::endl;
 
-    std::ofstream ofs;
     ofs.open("words.txt", std::ios::out);
     for (uint k = 0; k < K; ++k)
     {
@@ -112,6 +124,8 @@ int main(int argc, char **argv)
         ofs << std::endl;
     }
     ofs.close();
+
+
 /*
     std::ofstream ofs;
     ofs.open("words.txt", std::ios::out);

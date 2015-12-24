@@ -10,6 +10,7 @@
 #include <float.h>
 #include "whitening.h"
 #include "kmeans.h"
+#include "histogram.h"
 
 
 ////////////////////////////////
@@ -82,6 +83,76 @@ public:
         collect(words, wt, indata);
     }
 
+    // get window signature
+    void signature(VectorXt *sig,
+                   const WhiteningTransform<NumericalType> &wt,
+                   const std::vector<NumericalType> &indata,
+                   const MatrixXt &words,
+                   const uint index = UINT_MAX)
+    {
+        sig->setZero();
+
+        // some checks
+        if (sig->rows() != mK)
+        {
+            std::cerr << "SeriesCollector: signature vector must have K rows\n";
+            return;
+        }
+        if (wt.dim != mDim)
+        {
+            std::cerr << "SeriesCollector: whitening transform has invalid dimensions\n";
+            return;
+        }
+        if (!wt.successful)
+        {
+            std::cerr << "SeriesCollector: whitening transform is invalid\n";
+            return;
+        }
+        if (words.rows() != mDim)
+        {
+            std::cerr << "SeriesCollector: code words rows number invalid\n";
+            return;
+        }
+        if (words.cols() != mK)
+        {
+            std::cerr << "SeriesCollector: code words cols number invalid\n";
+            return;
+        }
+
+        // set window position
+        const uint pos = std::min(index, (uint)(indata.size() - mSWindow)),
+                   flimit = mSWindow - mFWindow, // feature window
+                   cols = flimit + 1u;
+        // alloc
+        MatrixXt features(mDim, cols);
+
+        // collect
+        const NumericalType normIndex = (NumericalType)1.0 / flimit;
+        // normalze current window to 0 - 1
+        NumericalType vmin, scale;
+        normalize(indata, pos, &vmin, &scale);
+
+        // extract feature windows from normalized series window
+        for (uint k = 0; k <= flimit; ++k)
+        {
+            for (uint f = 0; f < mFWindow; ++f)
+            {
+                features(f, k) = scale * (indata[pos + k + f] - vmin);
+            }
+            features(mFWindow, k) = k * normIndex;
+        }
+        std::cerr << features.transpose() << std::endl;
+
+        // begin whitening
+        PCAWhitening<NumericalType> pca(mDim);
+        std::cout << "apply whitening..." << std::endl;
+        pca.applyTransformInPlace(&features, wt);
+        std::cerr << features.transpose() << std::endl;
+
+        // gen histogram
+        RBFHistogram<NumericalType> rbf(mDim, (NumericalType)1.0);
+        rbf.compute(sig, features, words);
+    }
 
 private:
     // extract features and compute code words
@@ -128,6 +199,10 @@ private:
         std::cout << "apply whitening..." << std::endl;
         pca.applyTransformInPlace(&features, *wt);
         //std::cerr << features.transpose() << std::endl;
+/*
+        std::ofstream ofs("features.txt");
+        ofs << features.transpose() << std::endl;
+        ofs.close();*/
 
         // clustering
         std::cout << "clustering..." << std::endl;

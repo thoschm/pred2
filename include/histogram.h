@@ -31,7 +31,7 @@ public:
     typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, 1, Eigen::ColMajor> VectorXt;
 
     // ctor
-    RBFHistogram(const uint dim, const NumericalType sigma) : mDim(dim), mSigma(sigma)
+    RBFHistogram(const uint dim, const NumericalType sigma = (NumericalType)1.0) : mDim(dim), mSigma(sigma)
     { }
 
     // compute histogram
