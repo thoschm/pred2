@@ -75,7 +75,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 #define SAMPLES 500u
-#define K 20u
+#define K 3u
 #define WINDOW 10u
 #define FEATURE 6u
 
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
     SeriesCollector<float>::VectorXt hist(K);
     collector.signature(&hist, wt, indata, words, 0);
     std::cerr << "signature:\n" << hist.transpose() << std::endl;
-    collector.signature(&hist, wt, indata, words, 100);
+    collector.signature(&hist, wt, indata, words, 10);
     std::cerr << "signature:\n" << hist.transpose() << std::endl;
 
 

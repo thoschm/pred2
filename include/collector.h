@@ -93,6 +93,11 @@ public:
         sig->setZero();
 
         // some checks
+        if (indata.size() < mSWindow)
+        {
+            std::cerr << "SeriesCollector: need more samples for given window size\n";
+            return;
+        }
         if (sig->rows() != mK)
         {
             std::cerr << "SeriesCollector: signature vector must have K rows\n";
@@ -118,6 +123,8 @@ public:
             std::cerr << "SeriesCollector: code words cols number invalid\n";
             return;
         }
+
+        // TODO: use collect code
 
         // set window position
         const uint pos = std::min(index, (uint)(indata.size() - mSWindow)),
