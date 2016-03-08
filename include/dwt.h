@@ -9,6 +9,13 @@
 #include <string.h>
 
 
+////////////////////////////////
+// NAMESPACE
+////////////////////////////////
+namespace BOF
+{
+
+
 ////////////////////////////////////
 // Supported Wavelets
 ////////////////////////////////////
@@ -134,6 +141,16 @@ public:
         }
     }
 
+    NumericalType energy(const NumericalType *input)
+    {
+        NumericalType e = (NumericalType)0.0;
+        for (uint i = 0; i < mWindow; ++i)
+        {
+            e += input[i] * input[i];
+        }
+        return e;
+    }
+
     bool compute(NumericalType *input,
                  const NumericalType *scalingfilter,
                  const NumericalType *waveletfilter,
@@ -198,5 +215,7 @@ private:
         return ((num != 0) && !(num & (num - 1u)));
     }
 };
+
+} // namespace
 
 #endif
