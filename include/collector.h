@@ -201,6 +201,7 @@ private:
         //std::cerr << features.transpose() << std::endl;
 
         // begin whitening
+        std::cerr << "compute whitening transform..." << std::endl;
         PCAWhitening<NumericalType> pca(mDim);
         pca.computeTransform(wt, features);
         std::cout << "apply whitening..." << std::endl;

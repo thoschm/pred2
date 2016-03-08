@@ -74,20 +74,22 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 
-#define SAMPLES 500u
-#define K 3u
-#define WINDOW 10u
-#define FEATURE 6u
+#define SAMPLES 10u
+#define K 50u
+#define WINDOW 1000u
+#define FEATURE 10u
 
 
 int main(int argc, char **argv)
 {
 
     std::vector<float> indata;
-    for (uint i = 0; i < SAMPLES; ++i)
+    loadSequence(&indata, "chart.txt");
+    /*for (uint i = 0; i < SAMPLES; ++i)
     {
-        indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
-    }
+        //indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        indata.push_back(i);
+    }*/
 
     SeriesCollector<float> collector(WINDOW, FEATURE, K);
     SeriesCollector<float>::MatrixXt words(FEATURE, K);
@@ -96,15 +98,17 @@ int main(int argc, char **argv)
     collector.codeWords(&words, &wt, indata);
     std::cerr << words.transpose() << std::endl << std::endl;
 
+    /*
     SeriesCollector<float>::VectorXt hist(K);
     collector.signature(&hist, wt, indata, words, 0);
     std::cerr << "signature:\n" << hist.transpose() << std::endl;
     collector.signature(&hist, wt, indata, words, 10);
     std::cerr << "signature:\n" << hist.transpose() << std::endl;
+*/
 
 
     std::ofstream ofs;
-/*    ofs.open("centroids.txt", std::ios::out);
+ /*   ofs.open("centroids.txt", std::ios::out);
     ofs << words.transpose() << std::endl;
     ofs.close();
 */
@@ -163,8 +167,17 @@ int main(int argc, char **argv)
     WhiteningTransform<float> wt(3);
     pca.computeTransform(&wt, mat);
     pca.applyTransformInPlace(&mat, wt);
+
+    KMeans<float> kmeans(3, 4, 50);
+    std::vector<uint> freq;
+    KMeans<float>::MatrixXt centers(3, 4);
+    kmeans.compute(&centers, &freq, mat);
+    dumpMatrix(centers, "wcenter.txt");
+
     dumpMatrix(mat, "white.txt");
-    pca.inverseTransformInPlace(&mat, wt);
-    dumpMatrix(mat, "inv.txt");*/
+    pca.inverseTransformInPlace(&centers, wt);
+    dumpMatrix(centers, "invcenter.txt");
+
+    */
     return 0;
 }
