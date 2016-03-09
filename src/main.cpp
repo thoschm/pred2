@@ -78,18 +78,18 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 #define SAMPLES 2000u
 #define K 10u
 #define WINDOW 500
-#define FEATURE 30
+#define FEATURE 20
 
 
 int main(int argc, char **argv)
 {
     std::vector<float> indata;
     loadSequence(&indata, "chart.txt");
-    /*for (uint i = 0; i < SAMPLES; ++i)
+    for (uint i = 0; i < SAMPLES; ++i)
     {
         //indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
-    }*/
+    }
 
     SeriesCollector<float> collector(WINDOW, FEATURE, K);
     SeriesCollector<float>::MatrixXt words(FEATURE, K);
@@ -124,9 +124,9 @@ int main(int argc, char **argv)
     ofs.open("words.txt", std::ios::out);
     for (uint k = 0; k < K; ++k)
     {
-        for (uint l = 0; l < FEATURE - 1u; ++l)
+        for (uint l = 0; l < FEATURE; ++l)
         {
-            ofs << (words(FEATURE - 1u, k) * (WINDOW - (FEATURE - 1u))) + l << " " << words(l, k) << std::endl;
+            ofs << l << " " << words(l, k) << std::endl;
         }
         ofs << std::endl;
     }

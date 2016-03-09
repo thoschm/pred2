@@ -39,7 +39,6 @@ public:
     SeriesCollector(const uint seriesWindow,
                     const uint featureSize,
                     const uint codeWords) : mSWindow(seriesWindow),
-                                            mFWindow(featureSize - 1u),
                                             mDim(featureSize),
                                             mK(codeWords)
     { }
@@ -68,7 +67,7 @@ public:
             std::cerr << "SeriesCollector: out matrix column count must be equal to the desired number of code words\n";
             return;
         }
-        if (mSWindow < mFWindow)
+        if (mSWindow < mDim)
         {
             std::cerr << "SeriesCollector: feature window should be much smaller than series window\n";
             return;
@@ -86,7 +85,7 @@ public:
 
         collect(words, norm, wt, indata);
     }
-
+/*
     // get window signature
     void signature(VectorXt *sig,
                    const NormParams<NumericalType> &norm,
@@ -133,7 +132,7 @@ public:
 
         // set window position
         const uint pos = std::min(index, (uint)(indata.size() - mSWindow)),
-                   flimit = mSWindow - mFWindow, // feature window
+                   flimit = mSWindow - mDim, // feature window
                    cols = flimit + 1u;
         // alloc
         MatrixXt features(mDim, cols);
@@ -165,6 +164,7 @@ public:
         RBFHistogram<NumericalType> rbf(mDim, (NumericalType)1.0);
         rbf.compute(sig, features, words);
     }
+    */
 
 private:
     // extract features and compute code words
@@ -174,7 +174,7 @@ private:
                  const std::vector<NumericalType> &indata) const
     {
         const uint slimit = indata.size() - mSWindow, // series window
-                   flimit = mSWindow - mFWindow;      // feature window
+                   flimit = mSWindow - mDim;          // feature window
 
         // this will need lots of memory
         const uint cols = (slimit + 1u) * (flimit + 1u);
@@ -183,7 +183,6 @@ private:
 
         // collect
         uint cnt = 0;
-        const NumericalType normIndex = (NumericalType)1.0 / flimit;
         for (uint i = 0; i <= slimit; ++i)
         {
             // normalze current window to 0 - 1
@@ -194,12 +193,11 @@ private:
             for (uint k = 0; k <= flimit; ++k)
             {
                 //std::cerr << "vector " << cnt << ": ";
-                for (uint f = 0; f < mFWindow; ++f)
+                for (uint f = 0; f < mDim; ++f)
                 {
                     features(f, cnt) = scale * (indata[i + k + f] - vmin);
                     //std::cerr << i + k + f << " ";
                 }
-                features(mFWindow, cnt) = k * normIndex;
                 ++cnt;
                 //std::cerr << std::endl;
             }
@@ -273,7 +271,6 @@ private:
 
     // vars
     uint mSWindow,
-         mFWindow,
          mDim,
          mK;
 };
