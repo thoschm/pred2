@@ -138,11 +138,10 @@ public:
         VectorXt x;
         for (uint i = 0; i < cols; ++i)
         {
-            x = (x.array() * params.stddev.array()).matrix();
+            x = (data->col(i).array() * params.stddev.array()).matrix();
             data->col(i) = x + params.mean;
         }
     }
-
 
 private:
     // compute mean

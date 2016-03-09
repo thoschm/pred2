@@ -210,7 +210,7 @@ private:
     uint mWindow;
     NumericalType *mTmp;
 
-    static bool isPow2(const uint num)
+    static bool isPow2(const uint num) const
     {
         return ((num != 0) && !(num & (num - 1u)));
     }

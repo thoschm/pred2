@@ -65,7 +65,7 @@ public:
     { }
 
     // compute
-    void computeTransform(WhiteningTransform<NumericalType> *wt, const MatrixXt &indata)
+    void computeTransform(WhiteningTransform<NumericalType> *wt, const MatrixXt &indata) const
     {
         wt->successful = false;
         // some checks
@@ -83,7 +83,7 @@ public:
     }
 
     // compute from given transform
-    void applyTransformInPlace(MatrixXt *data, const WhiteningTransform<NumericalType> &wt)
+    void applyTransformInPlace(MatrixXt *data, const WhiteningTransform<NumericalType> &wt) const
     {
         // checks
         if (data->rows() != mDim)
@@ -114,7 +114,7 @@ public:
 
 
     // compute from given transform
-    void inverseTransformInPlace(MatrixXt *data, const WhiteningTransform<NumericalType> &wt)
+    void inverseTransformInPlace(MatrixXt *data, const WhiteningTransform<NumericalType> &wt) const
     {
         // checks
         if (data->rows() != mDim)
@@ -156,7 +156,7 @@ public:
 private:
 
     // whitening based on input data
-    void whiten(WhiteningTransform<NumericalType> *wt, const MatrixXt &indata)
+    void whiten(WhiteningTransform<NumericalType> *wt, const MatrixXt &indata) const
     {
         // mean and cov
         VectorXt mean(mDim);

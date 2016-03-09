@@ -11,6 +11,7 @@
 #include "whitening.h"
 #include "kmeans.h"
 #include "histogram.h"
+#include "norm.h"
 
 
 ////////////////////////////////
@@ -44,7 +45,10 @@ public:
     { }
 
     // compute code words
-    void codeWords(MatrixXt *words, WhiteningTransform<NumericalType> *wt, const std::vector<NumericalType> &indata)
+    void codeWords(MatrixXt *words,
+                   NormParams<NumericalType> *norm,
+                   WhiteningTransform<NumericalType> *wt,
+                   const std::vector<NumericalType> &indata) const
     {
         words->setZero();
 
@@ -80,15 +84,16 @@ public:
             return;
         }
 
-        collect(words, wt, indata);
+        collect(words, norm, wt, indata);
     }
 
     // get window signature
     void signature(VectorXt *sig,
+                   const NormParams<NumericalType> &norm,
                    const WhiteningTransform<NumericalType> &wt,
                    const std::vector<NumericalType> &indata,
                    const MatrixXt &words,
-                   const uint index = UINT_MAX)
+                   const uint index = UINT_MAX) const
     {
         sig->setZero();
 
@@ -163,7 +168,10 @@ public:
 
 private:
     // extract features and compute code words
-    void collect(MatrixXt *words, WhiteningTransform<NumericalType> *wt, const std::vector<NumericalType> &indata)
+    void collect(MatrixXt *words,
+                 NormParams<NumericalType> *norm,
+                 WhiteningTransform<NumericalType> *wt,
+                 const std::vector<NumericalType> &indata) const
     {
         const uint slimit = indata.size() - mSWindow, // series window
                    flimit = mSWindow - mFWindow;      // feature window
@@ -181,7 +189,6 @@ private:
             // normalze current window to 0 - 1
             NumericalType vmin, scale;
             normalize(indata, i, &vmin, &scale);
-            //std::cerr << "---------" << std::endl;
 
             // extract feature windows from normalized series window
             for (uint k = 0; k <= flimit; ++k)
@@ -198,6 +205,16 @@ private:
             }
         }
         std::cerr << "vectors seen: " << cnt << std::endl;
+
+        //std::cerr << features.transpose() << std::endl;
+
+        // begin normalization
+        std::cout << "compute dimension-wise normalization..." << std::endl;
+        Normalization<NumericalType> elemnorm(mDim);
+        elemnorm.computeParams(norm, features);
+        std::cout << "apply normalization..." << std::endl;
+        elemnorm.applyParamsInPlace(&features, *norm);
+
         //std::cerr << features.transpose() << std::endl;
 
         // begin whitening
@@ -227,7 +244,7 @@ private:
     void normalize(const std::vector<NumericalType> &data,
                    const uint startAt,
                    NumericalType *minVal,
-                   NumericalType *scaling)
+                   NumericalType *scaling) const
     {
         // normalize data window to 0-1
         NumericalType vmin = (NumericalType)FLT_MAX,
