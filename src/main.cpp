@@ -77,10 +77,10 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 #define SAMPLES 2000u
 #define K 10u
-#define WINDOW 200
-#define FEATURE 32
+#define WINDOW 100
+#define FEATURE 8
 #define WAVELET 2
-#define PARTS 4
+#define PARTS 5
 
 
 int main(int argc, char **argv)
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
-        //indata.push_back(std::sin(100.0 * i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        //indata.push_back(std::sin(100000.0 * i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
     dumpSequence(indata, "seq.txt");
@@ -107,9 +107,11 @@ int main(int argc, char **argv)
     collector.signature(&hist, np, wt, indata, words);
     std::cerr << "signature:\n" << hist.transpose() << std::endl;
 
+    collector.dumpBasisActivation("sig.txt", "act.txt", indata, words, hist, np, wt);
 
 
-    return 0;
+
+
 
     std::ofstream ofs;
  /*   ofs.open("centroids.txt", std::ios::out);

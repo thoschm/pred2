@@ -195,6 +195,57 @@ public:
         }
     }
 
+    void dumpBasisActivation(const std::string &signal,
+                             const std::string &activation,
+                             const std::vector<NumericalType> &indata,
+                             const MatrixXt &words,
+                             const MatrixXt &signature,
+                             const NormParams<NumericalType> &norm,
+                             const WhiteningTransform<NumericalType> &wt,
+                             const uint index = UINT_MAX)
+    {
+        // set window position
+        const uint pos = std::min(index, (uint)(indata.size() - mSWindow));
+
+        // normalze current window to 0 - 1
+        NumericalType vmin, scale;
+        normalize(indata, pos, &vmin, &scale);
+
+        // dump signal
+        std::ofstream ofs;
+        ofs.open(signal.c_str(), std::ios::out);
+        for (uint i = 0; i < mSWindow; ++i)
+        {
+            ofs << i << " " << (scale * (indata[pos + i] - vmin)) << std::endl;
+        }
+        ofs.close();
+
+        // turn words to no original space
+        MatrixXt wcopy = words;
+        PCAWhitening<float> pca(mDim);
+        pca.inverseTransformInPlace(&wcopy, wt);
+        Normalization<float> elemnorm(mDim);
+        elemnorm.inverseParamsInPlace(&wcopy, norm);
+
+        // dump activation
+        const uint partSize = mSWindow / mParts;
+        ofs.open(activation.c_str(), std::ios::out);
+        for (uint p = 0; p < mParts; ++p)
+        {
+            const uint partpos = p * partSize;
+            for (uint w = 0; w < wcopy.cols(); ++w)
+            {
+                if (signature(w, p) < (NumericalType)1.0 / wcopy.cols()) continue;
+                for (uint k = 0; k < wcopy.rows(); ++k)
+                {
+                    ofs << (partpos + k) << " " << wcopy(k, w) << std::endl;
+                }
+                ofs << std::endl;
+            }
+        }
+        ofs.close();
+    }
+
 private:
     // extract features and compute code words
     void collect(MatrixXt *words,
