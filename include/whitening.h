@@ -166,6 +166,7 @@ private:
         // compute data mean and cov
         dataMean(&mean, indata);
         dataCov(&cov, indata, mean);
+        //std::cout << cov << std::endl;
 
         // compute eigenvalues and eigenvectors
         Eigen::SelfAdjointEigenSolver<MatrixXt> esolver;

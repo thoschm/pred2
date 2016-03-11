@@ -77,8 +77,9 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 #define SAMPLES 2000u
 #define K 10u
-#define WINDOW 500
-#define FEATURE 20
+#define WINDOW 200
+#define FEATURE 32
+#define WAVELET 4
 
 
 int main(int argc, char **argv)
@@ -91,7 +92,7 @@ int main(int argc, char **argv)
         //indata.push_back(i);
     }
 
-    SeriesCollector<float> collector(WINDOW, FEATURE, K);
+    SeriesCollector<float> collector(WINDOW, FEATURE, K, (WaveletType)WAVELET);
     SeriesCollector<float>::MatrixXt words(FEATURE, K);
 
     WhiteningTransform<float> wt(FEATURE);
@@ -121,9 +122,14 @@ int main(int argc, char **argv)
     Normalization<float> elemnorm(FEATURE);
     elemnorm.inverseParamsInPlace(&words, np);
 
+
+    float s[WAVELET], w[WAVELET];
+    WaveletCoefficients<float>::lookup((WaveletType)WAVELET, s, w);
+    FastDWT<float> dwt(FEATURE);
     ofs.open("words.txt", std::ios::out);
     for (uint k = 0; k < K; ++k)
     {
+        dwt.inverse(words.col(k).data(), s, w, WAVELET);
         for (uint l = 0; l < FEATURE; ++l)
         {
             ofs << l << " " << words(l, k) << std::endl;

@@ -172,6 +172,11 @@ private:
                 sum += diff * diff;
             }
             (*out)(d) = std::sqrt(sum / cols);
+            if ((*out)(d) == (NumericalType)0.0)
+            {
+                std::cerr << "sdtDev: dimension has zero standard deviation\n";
+                (*out)(d) = (NumericalType)1.0;
+            }
         }
     }
 

@@ -121,7 +121,6 @@ public:
         if (!isPow2(windowSize))
         {
             std::cerr << "input value count is not a power of 2." << std::endl;
-            return;
         }
         mTmp = (NumericalType *)malloc(windowSize * sizeof(NumericalType));
     }
@@ -206,14 +205,14 @@ public:
         return true;
     }
 
-private:
-    uint mWindow;
-    NumericalType *mTmp;
-
-    static bool isPow2(const uint num) const
+    static bool isPow2(const uint num)
     {
         return ((num != 0) && !(num & (num - 1u)));
     }
+
+private:
+    uint mWindow;
+    NumericalType *mTmp;
 };
 
 } // namespace

@@ -12,6 +12,7 @@
 #include "kmeans.h"
 #include "histogram.h"
 #include "norm.h"
+#include "dwt.h"
 
 
 ////////////////////////////////
@@ -38,9 +39,11 @@ public:
     // ctor
     SeriesCollector(const uint seriesWindow,
                     const uint featureSize,
-                    const uint codeWords) : mSWindow(seriesWindow),
-                                            mDim(featureSize),
-                                            mK(codeWords)
+                    const uint codeWords,
+                    const WaveletType wavelet = D4_WAVELET) : mSWindow(seriesWindow),
+                                                              mDim(featureSize),
+                                                              mK(codeWords),
+                                                              mWavelet(wavelet)
     { }
 
     // compute code words
@@ -80,6 +83,11 @@ public:
         if (wt->dim != mDim)
         {
             std::cerr << "SeriesCollector: whitening transform has invalid dimensions\n";
+            return;
+        }
+        if (!FastDWT<NumericalType>::isPow2(mDim))
+        {
+            std::cerr << "SeriesCollector: feature dimension is not a power of 2\n";
             return;
         }
 
@@ -183,6 +191,9 @@ private:
 
         // collect
         uint cnt = 0;
+        NumericalType s[(uint)mWavelet], w[(uint)mWavelet];
+        WaveletCoefficients<NumericalType>::lookup(mWavelet, s, w);
+        FastDWT<NumericalType> dwt(mDim);
         for (uint i = 0; i <= slimit; ++i)
         {
             // normalze current window to 0 - 1
@@ -192,14 +203,12 @@ private:
             // extract feature windows from normalized series window
             for (uint k = 0; k <= flimit; ++k)
             {
-                //std::cerr << "vector " << cnt << ": ";
                 for (uint f = 0; f < mDim; ++f)
                 {
                     features(f, cnt) = scale * (indata[i + k + f] - vmin);
-                    //std::cerr << i + k + f << " ";
                 }
+                dwt.compute(features.col(cnt).data(), s, w, (uint)mWavelet);
                 ++cnt;
-                //std::cerr << std::endl;
             }
         }
         std::cerr << "vectors seen: " << cnt << std::endl;
@@ -212,7 +221,6 @@ private:
         elemnorm.computeParams(norm, features);
         std::cout << "apply normalization..." << std::endl;
         elemnorm.applyParamsInPlace(&features, *norm);
-
         //std::cerr << features.transpose() << std::endl;
 
         // begin whitening
@@ -222,10 +230,6 @@ private:
         std::cout << "apply whitening..." << std::endl;
         pca.applyTransformInPlace(&features, *wt);
         //std::cerr << features.transpose() << std::endl;
-/*
-        std::ofstream ofs("features.txt");
-        ofs << features.transpose() << std::endl;
-        ofs.close();*/
 
         // clustering
         std::cout << "clustering..." << std::endl;
@@ -273,6 +277,7 @@ private:
     uint mSWindow,
          mDim,
          mK;
+    WaveletType mWavelet;
 };
 
 } // namespace
