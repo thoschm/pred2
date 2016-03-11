@@ -149,7 +149,7 @@ public:
             std::cerr << "SeriesCollector: series window size must be a multiple of the number of parts\n";
             return;
         }
-        if (mSWindow / mParts <= mDim)
+        if (mSWindow / mParts < mDim)
         {
             std::cerr << "SeriesCollector: parts are smaller than feature dimension\n";
             return;
@@ -233,15 +233,21 @@ public:
         for (uint p = 0; p < mParts; ++p)
         {
             const uint partpos = p * partSize;
+            NumericalType m = (NumericalType)0.0;
+            uint idx = 0;
             for (uint w = 0; w < wcopy.cols(); ++w)
             {
-                if (signature(w, p) < (NumericalType)1.0 / wcopy.cols()) continue;
-                for (uint k = 0; k < wcopy.rows(); ++k)
+                if (signature(w, p) > m)
                 {
-                    ofs << (partpos + k) << " " << wcopy(k, w) << std::endl;
+                    m = signature(w, p);
+                    idx = w;
                 }
-                ofs << std::endl;
             }
+            for (uint k = 0; k < wcopy.rows(); ++k)
+            {
+                ofs << (partpos + k) << " " << wcopy(k, idx) << std::endl;
+            }
+            ofs << std::endl;
         }
         ofs.close();
     }
