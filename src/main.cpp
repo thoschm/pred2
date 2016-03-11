@@ -79,7 +79,8 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 #define K 10u
 #define WINDOW 200
 #define FEATURE 32
-#define WAVELET 4
+#define WAVELET 2
+#define PARTS 4
 
 
 int main(int argc, char **argv)
@@ -88,11 +89,12 @@ int main(int argc, char **argv)
     loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
-        //indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        //indata.push_back(std::sin(100.0 * i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
+    dumpSequence(indata, "seq.txt");
 
-    SeriesCollector<float> collector(WINDOW, FEATURE, K, (WaveletType)WAVELET);
+    SeriesCollector<float> collector(WINDOW, FEATURE, K, PARTS, (WaveletType)WAVELET);
     SeriesCollector<float>::MatrixXt words(FEATURE, K);
 
     WhiteningTransform<float> wt(FEATURE);
@@ -100,14 +102,14 @@ int main(int argc, char **argv)
     collector.codeWords(&words, &np, &wt, indata);
     std::cerr << words.transpose() << std::endl << std::endl;
 
-    /*
-    SeriesCollector<float>::VectorXt hist(K);
-    collector.signature(&hist, wt, indata, words, 0);
-    std::cerr << "signature:\n" << hist.transpose() << std::endl;
-    collector.signature(&hist, wt, indata, words, 10);
-    std::cerr << "signature:\n" << hist.transpose() << std::endl;
-*/
 
+    SeriesCollector<float>::MatrixXt hist(K, PARTS);
+    collector.signature(&hist, np, wt, indata, words);
+    std::cerr << "signature:\n" << hist.transpose() << std::endl;
+
+
+
+    return 0;
 
     std::ofstream ofs;
  /*   ofs.open("centroids.txt", std::ios::out);
@@ -129,7 +131,7 @@ int main(int argc, char **argv)
     ofs.open("words.txt", std::ios::out);
     for (uint k = 0; k < K; ++k)
     {
-        dwt.inverse(words.col(k).data(), s, w, WAVELET);
+        //dwt.inverse(words.col(k).data(), s, w, WAVELET);
         for (uint l = 0; l < FEATURE; ++l)
         {
             ofs << l << " " << words(l, k) << std::endl;

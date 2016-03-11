@@ -40,10 +40,14 @@ public:
     SeriesCollector(const uint seriesWindow,
                     const uint featureSize,
                     const uint codeWords,
-                    const WaveletType wavelet = D4_WAVELET) : mSWindow(seriesWindow),
-                                                              mDim(featureSize),
-                                                              mK(codeWords),
-                                                              mWavelet(wavelet)
+                    const uint parts,
+                    const WaveletType wavelet = D4_WAVELET,
+                    const NumericalType histSigma = (NumericalType)1.0) : mSWindow(seriesWindow),
+                                                                          mDim(featureSize),
+                                                                          mK(codeWords),
+                                                                          mParts(parts),
+                                                                          mWavelet(wavelet),
+                                                                          mHistSigma(histSigma)
     { }
 
     // compute code words
@@ -93,9 +97,9 @@ public:
 
         collect(words, norm, wt, indata);
     }
-/*
+
     // get window signature
-    void signature(VectorXt *sig,
+    void signature(MatrixXt *sig,
                    const NormParams<NumericalType> &norm,
                    const WhiteningTransform<NumericalType> &wt,
                    const std::vector<NumericalType> &indata,
@@ -112,7 +116,12 @@ public:
         }
         if (sig->rows() != mK)
         {
-            std::cerr << "SeriesCollector: signature vector must have K rows\n";
+            std::cerr << "SeriesCollector: signature matrix must have K rows\n";
+            return;
+        }
+        if (sig->cols() != mParts)
+        {
+            std::cerr << "SeriesCollector: signature matrix must have Parts cols\n";
             return;
         }
         if (wt.dim != mDim)
@@ -135,44 +144,56 @@ public:
             std::cerr << "SeriesCollector: code words cols number invalid\n";
             return;
         }
-
-        // TODO: use collect code
+        if (mSWindow % mParts != 0)
+        {
+            std::cerr << "SeriesCollector: series window size must be a multiple of the number of parts\n";
+            return;
+        }
+        if (mSWindow / mParts <= mDim)
+        {
+            std::cerr << "SeriesCollector: parts are smaller than feature dimension\n";
+            return;
+        }
 
         // set window position
         const uint pos = std::min(index, (uint)(indata.size() - mSWindow)),
-                   flimit = mSWindow - mDim, // feature window
+                   partSize = mSWindow / mParts,
+                   flimit = partSize - mDim, // feature window
                    cols = flimit + 1u;
         // alloc
         MatrixXt features(mDim, cols);
 
-        // collect
-        const NumericalType normIndex = (NumericalType)1.0 / flimit;
         // normalze current window to 0 - 1
         NumericalType vmin, scale;
         normalize(indata, pos, &vmin, &scale);
 
-        // extract feature windows from normalized series window
-        for (uint k = 0; k <= flimit; ++k)
-        {
-            for (uint f = 0; f < mFWindow; ++f)
-            {
-                features(f, k) = scale * (indata[pos + k + f] - vmin);
-            }
-            features(mFWindow, k) = k * normIndex;
-        }
-        std::cerr << features.transpose() << std::endl;
-
-        // begin whitening
+        // for each part
         PCAWhitening<NumericalType> pca(mDim);
-        std::cout << "apply whitening..." << std::endl;
-        pca.applyTransformInPlace(&features, wt);
-        std::cerr << features.transpose() << std::endl;
+        Normalization<NumericalType> elemnorm(mDim);
+        RBFHistogram<NumericalType> rbf(mDim, mHistSigma);
+        VectorXt tmp(mK);
+        for (uint p = 0; p < mParts; ++p)
+        {
+            const uint partpos = pos + p * partSize;
+            // extract feature windows from normalized series window
+            for (uint k = 0; k <= flimit; ++k)
+            {
+                for (uint f = 0; f < mDim; ++f)
+                {
+                    features(f, k) = scale * (indata[partpos + k + f] - vmin);
+                    //std::cerr << (partpos + k + f) << std::endl;
+                }
+            }
+            // apply normaization + whitening
+            elemnorm.applyParamsInPlace(&features, norm);
+            pca.applyTransformInPlace(&features, wt);
+            rbf.compute(&tmp, features, words);
 
-        // gen histogram
-        RBFHistogram<NumericalType> rbf(mDim, (NumericalType)1.0);
-        rbf.compute(sig, features, words);
+            //std::cerr << features.transpose() << std::endl;
+
+            sig->col(p) = tmp;
+        }
     }
-    */
 
 private:
     // extract features and compute code words
@@ -207,7 +228,7 @@ private:
                 {
                     features(f, cnt) = scale * (indata[i + k + f] - vmin);
                 }
-                dwt.compute(features.col(cnt).data(), s, w, (uint)mWavelet);
+                //dwt.compute(features.col(cnt).data(), s, w, (uint)mWavelet);
                 ++cnt;
             }
         }
@@ -276,8 +297,10 @@ private:
     // vars
     uint mSWindow,
          mDim,
-         mK;
+         mK,
+         mParts;
     WaveletType mWavelet;
+    NumericalType mHistSigma;
 };
 
 } // namespace

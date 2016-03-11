@@ -35,7 +35,7 @@ public:
     { }
 
     // compute histogram
-    void compute(VectorXt *out, const MatrixXt &indata, const MatrixXt &words)
+    void compute(VectorXt *out, const MatrixXt &indata, const MatrixXt &words) const
     {
         out->setZero();
 
