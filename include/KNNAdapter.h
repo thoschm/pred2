@@ -185,7 +185,7 @@ private:
     PointAccessor &operator=(const PointAccessor &other);
 
 public:
-    static NumericalType at(const Eigen::Matrix<NumericalType, 3, 1> &item, uint i) { return item[i]; }
+    static NumericalType at(const Eigen::Matrix<NumericalType, 3, 1> &item, const uint i) { return item[i]; }
 };
 
 typedef GenericKNNAdapter<3, PointVector3f, PointAccessor<float>, float> PointVectorKNNAdapter3f;
