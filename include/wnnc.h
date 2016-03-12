@@ -33,10 +33,15 @@ struct ClassificationResult
 template <typename NumericalType>
 struct Sample
 {
-    Sample(const NumericalType *array, const uint category) : data(array), label(category)
-    { }
-    const NumericalType *data;
+    // for convenience
+    typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, 1, Eigen::ColMajor> VectorXt;
+    VectorXt signature;
     uint label;
+    Sample(const uint dim)
+    {
+        signature = VectorXt(dim);
+        label = 0;
+    }
 };
 
 
@@ -52,7 +57,7 @@ private:
     SampleAccessor &operator=(const SampleAccessor &other);
 
 public:
-    static NumericalType at(const Sample<NumericalType> &item, const uint i) { return item.data[i]; }
+    static NumericalType at(const Sample<NumericalType> &item, const uint i) { return item.signature(i); }
 };
 
 
@@ -151,6 +156,23 @@ public:
             return;
         }
         mKnn.attach(mContainer, mDim);
+    }
+
+    // dump feature space into file
+    void dump(const std::string &file) const
+    {
+        std::ofstream of;
+        of.open(file.c_str(), std::ios::out);
+        of << "# dim1, dim2, dim3, ..., dimN, classID\n";
+        for (uint i = 0; i < mContainer->size(); ++i)
+        {
+            for (uint k = 0; k < mDim; ++k)
+            {
+                of << mContainer->at(i).data[k] << " ";
+            }
+            of << mContainer->at(i).label << "\n";
+        }
+        of.close();
     }
 
 private:

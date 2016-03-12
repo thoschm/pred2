@@ -99,7 +99,7 @@ public:
     }
 
     // get window signature
-    void signature(MatrixXt *sig,
+    void signature(VectorXt *sig,
                    const NormParams<NumericalType> &norm,
                    const WhiteningTransform<NumericalType> &wt,
                    const std::vector<NumericalType> &indata,
@@ -114,24 +114,14 @@ public:
             std::cerr << "SeriesCollector: need more samples for given window size\n";
             return;
         }
-        if (sig->rows() != mK)
+        if (sig->rows() != mK * mParts)
         {
-            std::cerr << "SeriesCollector: signature matrix must have K rows\n";
-            return;
-        }
-        if (sig->cols() != mParts)
-        {
-            std::cerr << "SeriesCollector: signature matrix must have Parts cols\n";
+            std::cerr << "SeriesCollector: signature vector must have parts x K rows\n";
             return;
         }
         if (wt.dim != mDim)
         {
             std::cerr << "SeriesCollector: whitening transform has invalid dimensions\n";
-            return;
-        }
-        if (!wt.successful)
-        {
-            std::cerr << "SeriesCollector: whitening transform is invalid\n";
             return;
         }
         if (words.rows() != mDim)
@@ -184,14 +174,14 @@ public:
                     //std::cerr << (partpos + k + f) << std::endl;
                 }
             }
-            // apply normaization + whitening
+            // apply normalization + whitening
             elemnorm.applyParamsInPlace(&features, norm);
             pca.applyTransformInPlace(&features, wt);
             rbf.compute(&tmp, features, words);
 
             //std::cerr << features.transpose() << std::endl;
-
-            sig->col(p) = tmp;
+            sig->block(p * mK, 0, mK, 1) = tmp;
+            //std::cerr << sig->transpose() << std::endl;
         }
     }
 
@@ -199,7 +189,7 @@ public:
                              const std::string &activation,
                              const std::vector<NumericalType> &indata,
                              const MatrixXt &words,
-                             const MatrixXt &signature,
+                             const VectorXt &signature,
                              const NormParams<NumericalType> &norm,
                              const WhiteningTransform<NumericalType> &wt,
                              const uint index = UINT_MAX)
@@ -237,9 +227,10 @@ public:
             uint idx = 0;
             for (uint w = 0; w < wcopy.cols(); ++w)
             {
-                if (signature(w, p) > m)
+                const NumericalType acti = signature(p * mK + w);
+                if (acti > m)
                 {
-                    m = signature(w, p);
+                    m = acti;
                     idx = w;
                 }
             }
