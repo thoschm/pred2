@@ -77,12 +77,12 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 #define SAMPLES 2000u
-#define K 50u
-#define WINDOW 160
-#define AHEAD 50
+#define K 20u
+#define WINDOW 500
+#define AHEAD 100
 #define FEATURE 16
 #define WAVELET 2
-#define PARTS 10
+#define PARTS 5
 
 #define INDEX 12500
 
@@ -90,11 +90,11 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 int main(int argc, char **argv)
 {
     std::vector<float> indata;
-    //loadSequence(&indata, "chart.txt");
+    loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
         //indata.push_back((i % 7 == 0) ? 2.0 : 5.0);
-        indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        //indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
     dumpSequence(indata, "seq.txt");
@@ -118,12 +118,43 @@ int main(int argc, char **argv)
     std::vector<Sample<float> > vec;
     for (uint i = 0; i <= limit; ++i)
     {
-
-
-
-
+        vec.push_back(Sample<float>(K * PARTS));
+        collector.signature(&(vec.back().signature), np, wt, indata, words, i);
+        std::cerr << ".";
+        if (indata[i + WINDOW - 1] < indata[i + WINDOW + AHEAD - 1])
+        {
+            vec.back().label = 1;
+        }
+        else
+        {
+            vec.back().label = 0;
+        }
     }
+    std::cerr << std::endl;
 
+    WeightedNNClassifier<float> wnnc(K * PARTS, 2);
+    wnnc.attach(&vec);
+    wnnc.train();
+    wnnc.dump("space.txt");
+
+    uint all = limit + 1u,
+         correct = 0;
+    for (uint i = 0; i <= limit; ++i)
+    {
+        Sample<float> sa(K * PARTS);
+        collector.signature(&(sa.signature), np, wt, indata, words, i);
+        ClassificationResult<float> res = wnnc.classify(sa);
+        std::cout << res.category << " " << res.confidence << std::endl;
+        if (indata[i + WINDOW - 1] < indata[i + WINDOW + AHEAD - 1])
+        {
+            if (res.category == 1u) ++correct;
+        }
+        else
+        {
+            if (res.category == 0u) ++correct;
+        }
+    }
+    std::cout << "CORRECT: " << correct << "/" << all << " (" << (100.0 * correct / all) << "%)" << std::endl;
 
 
     std::ofstream ofs;

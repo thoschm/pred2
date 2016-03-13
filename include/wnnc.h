@@ -106,7 +106,7 @@ public:
         // weighted voting
         uint limit = nn.size() - 1u;
         std::vector<NumericalType> categ(mCateg, (NumericalType)0.0);
-        NumericalType dist, w;
+        NumericalType dist;
         for (uint i = 0; i < limit; ++i)
         {
             // normalize distance
@@ -120,14 +120,14 @@ public:
         uint idx = UINT_MAX;
         for (uint i = 0; i < categ.size(); ++i)
         {
-            std::cerr << categ[i] << " ";
+            //std::cerr << categ[i] << " ";
             if (categ[i] > best)
             {
                 best = categ[i];
                 idx = i;
             }
         }
-        std::cerr << std::endl;
+        //std::cerr << std::endl;
         NumericalType secbest = (NumericalType)0.0;
         for (uint i = 0; i < categ.size(); ++i)
         {
@@ -143,7 +143,7 @@ public:
         res.confidence = (NumericalType)100.0 * ((NumericalType)1.0 - secbest / best);
         res.category = idx;
 
-        std::cerr << "best: " << best << "   secbest:" << secbest << std::endl;
+        //std::cerr << "best: " << best << "   secbest:" << secbest << std::endl;
         return res;
     }
 
@@ -168,7 +168,7 @@ public:
         {
             for (uint k = 0; k < mDim; ++k)
             {
-                of << mContainer->at(i).data[k] << " ";
+                of << mContainer->at(i).signature(k) << " ";
             }
             of << mContainer->at(i).label << "\n";
         }
