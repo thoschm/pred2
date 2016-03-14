@@ -76,13 +76,13 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 
-#define SAMPLES 2000u
-#define K 20u
+#define SAMPLES 10000u
+#define K 10u
 #define WINDOW 500
-#define AHEAD 100
+#define AHEAD 50
 #define FEATURE 16
 #define WAVELET 2
-#define PARTS 5
+#define PARTS 2
 
 #define INDEX 12500
 
@@ -99,12 +99,19 @@ int main(int argc, char **argv)
     }
     dumpSequence(indata, "seq.txt");
 
+    const uint halfsize = 0.9 * indata.size();
+    std::vector<float> traindata(indata.begin(), indata.begin() + halfsize);
+    std::vector<float> veridata(indata.begin() + halfsize, indata.end());
+    dumpSequence(traindata, "traindata.txt");
+    dumpSequence(veridata, "veridata.txt");
+
+
     SeriesCollector<float> collector(WINDOW, FEATURE, K, PARTS, (WaveletType)WAVELET);
     SeriesCollector<float>::MatrixXt words(FEATURE, K);
 
     WhiteningTransform<float> wt(FEATURE);
     NormParams<float> np(FEATURE);
-    collector.codeWords(&words, &np, &wt, indata);
+    collector.codeWords(&words, &np, &wt, traindata);
     std::cerr << words.transpose() << std::endl << std::endl;
 
     SeriesCollector<float>::VectorXt hist(K * PARTS);
@@ -114,14 +121,14 @@ int main(int argc, char **argv)
     collector.dumpBasisActivation("sig.txt", "act.txt", indata, words, hist, np, wt, INDEX);
 
     // create labeled samples
-    const uint limit = indata.size() - WINDOW - AHEAD;
+    uint limit = traindata.size() - WINDOW - AHEAD;
     std::vector<Sample<float> > vec;
     for (uint i = 0; i <= limit; ++i)
     {
         vec.push_back(Sample<float>(K * PARTS));
-        collector.signature(&(vec.back().signature), np, wt, indata, words, i);
+        collector.signature(&(vec.back().signature), np, wt, traindata, words, i);
         std::cerr << ".";
-        if (indata[i + WINDOW - 1] < indata[i + WINDOW + AHEAD - 1])
+        if (traindata[i + WINDOW - 1] < traindata[i + WINDOW + AHEAD - 1])
         {
             vec.back().label = 1;
         }
@@ -137,22 +144,32 @@ int main(int argc, char **argv)
     wnnc.train();
     wnnc.dump("space.txt");
 
+    limit = veridata.size() - WINDOW - AHEAD;
     uint all = limit + 1u,
          correct = 0;
     for (uint i = 0; i <= limit; ++i)
     {
         Sample<float> sa(K * PARTS);
-        collector.signature(&(sa.signature), np, wt, indata, words, i);
+        collector.signature(&(sa.signature), np, wt, veridata, words, i);
         ClassificationResult<float> res = wnnc.classify(sa);
-        std::cout << res.category << " " << res.confidence << std::endl;
-        if (indata[i + WINDOW - 1] < indata[i + WINDOW + AHEAD - 1])
+        std::cout << res.category << " " << res.confidence;
+        if (veridata[i + WINDOW - 1] < veridata[i + WINDOW + AHEAD - 1])
         {
-            if (res.category == 1u) ++correct;
+            if (res.category == 1u)
+            {
+                std::cerr << "!";
+                ++correct;
+            }
         }
         else
         {
-            if (res.category == 0u) ++correct;
+            if (res.category == 0u)
+            {
+                std::cerr << "!";
+                ++correct;
+            }
         }
+        std::cerr << std::endl;
     }
     std::cout << "CORRECT: " << correct << "/" << all << " (" << (100.0 * correct / all) << "%)" << std::endl;
 
