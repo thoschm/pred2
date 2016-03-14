@@ -75,14 +75,13 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 }
 
 
-
 #define SAMPLES 10000u
-#define K 10u
+#define K 50u
 #define WINDOW 500
 #define AHEAD 50
-#define FEATURE 16
+#define FEATURE 64
 #define WAVELET 2
-#define PARTS 2
+#define PARTS 5
 
 #define INDEX 12500
 
@@ -90,16 +89,16 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 int main(int argc, char **argv)
 {
     std::vector<float> indata;
-    loadSequence(&indata, "chart.txt");
+    loadSequence(&indata, "chart5.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
         //indata.push_back((i % 7 == 0) ? 2.0 : 5.0);
-        //indata.push_back(std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        //indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
     dumpSequence(indata, "seq.txt");
 
-    const uint halfsize = 0.9 * indata.size();
+    const uint halfsize = 0.8 * indata.size();
     std::vector<float> traindata(indata.begin(), indata.begin() + halfsize);
     std::vector<float> veridata(indata.begin() + halfsize, indata.end());
     dumpSequence(traindata, "traindata.txt");

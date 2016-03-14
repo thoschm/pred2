@@ -162,6 +162,9 @@ public:
         Normalization<NumericalType> elemnorm(mDim);
         RBFHistogram<NumericalType> rbf(mDim, mHistSigma);
         VectorXt tmp(mK);
+        NumericalType s[(uint)mWavelet], w[(uint)mWavelet];
+        WaveletCoefficients<NumericalType>::lookup(mWavelet, s, w);
+        FastDWT<NumericalType> dwt(mDim);
         for (uint p = 0; p < mParts; ++p)
         {
             const uint partpos = pos + p * partSize;
@@ -173,6 +176,7 @@ public:
                     features(f, k) = scale * (indata[partpos + k + f] - vmin);
                     //std::cerr << (partpos + k + f) << std::endl;
                 }
+                //dwt.compute(features.col(k).data(), s, w, (uint)mWavelet);
             }
             // apply normalization + whitening
             elemnorm.applyParamsInPlace(&features, norm);
@@ -210,12 +214,15 @@ public:
         }
         ofs.close();
 
-        // turn words to no original space
+        // turn words to original space
         MatrixXt wcopy = words;
         PCAWhitening<float> pca(mDim);
         pca.inverseTransformInPlace(&wcopy, wt);
         Normalization<float> elemnorm(mDim);
         elemnorm.inverseParamsInPlace(&wcopy, norm);
+        NumericalType s[(uint)mWavelet], wl[(uint)mWavelet];
+        WaveletCoefficients<NumericalType>::lookup(mWavelet, s, wl);
+        FastDWT<NumericalType> dwt(mDim);
 
         // dump activation
         const uint partSize = mSWindow / mParts;
@@ -234,9 +241,11 @@ public:
                     idx = w;
                 }
             }
+            VectorXt oneword = wcopy.col(idx);
+            //dwt.inverse(oneword.data(), s, wl, (uint)mWavelet);
             for (uint k = 0; k < wcopy.rows(); ++k)
             {
-                ofs << (partpos + k) << " " << wcopy(k, idx) << std::endl;
+                ofs << (partpos + k) << " " << oneword(k) << std::endl;
             }
             ofs << std::endl;
         }
