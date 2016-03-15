@@ -76,12 +76,12 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 #define SAMPLES 10000u
-#define K 50u
-#define WINDOW 1000
-#define AHEAD 100
-#define FEATURE 32
-#define WAVELET 2
-#define PARTS 10
+#define K 20u
+#define WINDOW 300
+#define AHEAD 50
+#define FEATURE 128
+#define WAVELET 8
+#define PARTS 2
 
 #define INDEX 12500
 
@@ -138,7 +138,7 @@ int main(int argc, char **argv)
     }
     std::cerr << std::endl;
 
-    WeightedNNClassifier<float> wnnc(K * PARTS, 2);
+    WeightedNNClassifier<float> wnnc(K * PARTS, 2u, 49u);
     wnnc.attach(&vec);
     wnnc.train();
     wnnc.dump("space.txt");
@@ -195,7 +195,7 @@ int main(int argc, char **argv)
     ofs.open("words.txt", std::ios::out);
     for (uint k = 0; k < K; ++k)
     {
-        //dwt.inverse(words.col(k).data(), s, w, WAVELET);
+        dwt.inverse(words.col(k).data(), s, w, WAVELET);
         for (uint l = 0; l < FEATURE; ++l)
         {
             ofs << l << " " << words(l, k) << std::endl;

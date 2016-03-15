@@ -176,7 +176,7 @@ public:
                     features(f, k) = scale * (indata[partpos + k + f] - vmin);
                     //std::cerr << (partpos + k + f) << std::endl;
                 }
-                //dwt.compute(features.col(k).data(), s, w, (uint)mWavelet);
+                dwt.compute(features.col(k).data(), s, w, (uint)mWavelet);
             }
             // apply normalization + whitening
             elemnorm.applyParamsInPlace(&features, norm);
@@ -242,7 +242,7 @@ public:
                 }
             }
             VectorXt oneword = wcopy.col(idx);
-            //dwt.inverse(oneword.data(), s, wl, (uint)mWavelet);
+            dwt.inverse(oneword.data(), s, wl, (uint)mWavelet);
             for (uint k = 0; k < wcopy.rows(); ++k)
             {
                 ofs << (partpos + k) << " " << oneword(k) << std::endl;
@@ -285,7 +285,7 @@ private:
                 {
                     features(f, cnt) = scale * (indata[i + k + f] - vmin);
                 }
-                //dwt.compute(features.col(cnt).data(), s, w, (uint)mWavelet);
+                dwt.compute(features.col(cnt).data(), s, w, (uint)mWavelet);
                 ++cnt;
             }
         }
@@ -311,7 +311,7 @@ private:
 
         // clustering
         std::cout << "clustering..." << std::endl;
-        KMeans<NumericalType> kmeans(mDim, mK, 10u * mK);
+        KMeans<NumericalType> kmeans(mDim, mK, 10u * mK, (NumericalType)1e-5, 20u);
         std::vector<uint> freq;
         kmeans.compute(words, &freq, features);
         for (uint i = 0; i < mK; ++i)
