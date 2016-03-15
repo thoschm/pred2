@@ -77,11 +77,11 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 #define SAMPLES 10000u
 #define K 50u
-#define WINDOW 500
-#define AHEAD 50
-#define FEATURE 64
+#define WINDOW 1000
+#define AHEAD 100
+#define FEATURE 32
 #define WAVELET 2
-#define PARTS 5
+#define PARTS 10
 
 #define INDEX 12500
 
@@ -144,7 +144,7 @@ int main(int argc, char **argv)
     wnnc.dump("space.txt");
 
     limit = veridata.size() - WINDOW - AHEAD;
-    uint all = limit + 1u,
+    uint all = 0,
          correct = 0;
     for (uint i = 0; i <= limit; ++i)
     {
@@ -152,6 +152,7 @@ int main(int argc, char **argv)
         collector.signature(&(sa.signature), np, wt, veridata, words, i);
         ClassificationResult<float> res = wnnc.classify(sa);
         std::cout << res.category << " " << res.confidence;
+        //if (res.confidence < 95.0) continue;
         if (veridata[i + WINDOW - 1] < veridata[i + WINDOW + AHEAD - 1])
         {
             if (res.category == 1u)
@@ -168,6 +169,7 @@ int main(int argc, char **argv)
                 ++correct;
             }
         }
+        ++all;
         std::cerr << std::endl;
     }
     std::cout << "CORRECT: " << correct << "/" << all << " (" << (100.0 * correct / all) << "%)" << std::endl;
