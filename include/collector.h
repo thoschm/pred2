@@ -134,22 +134,22 @@ public:
             std::cerr << "SeriesCollector: code words cols number invalid\n";
             return;
         }
-        if (mSWindow % mParts != 0)
+        if (mSWindow < mDim)
         {
-            std::cerr << "SeriesCollector: series window size must be a multiple of the number of parts\n";
+            std::cerr << "SeriesCollector: feature window should be much smaller than series window\n";
             return;
         }
-        if (mSWindow / mParts < mDim)
+        if ((mSWindow - mDim + 1u) % mParts != 0)
         {
-            std::cerr << "SeriesCollector: parts are smaller than feature dimension\n";
+            std::cerr << "SeriesCollector: series window - feature dim + 1 must be multiple of parts\n";
             return;
         }
 
         // set window position
         const uint pos = std::min(index, (uint)(indata.size() - mSWindow)),
-                   partSize = mSWindow / mParts,
-                   flimit = partSize - mDim, // feature window
+                   flimit = mSWindow - mDim, // series window
                    cols = flimit + 1u;
+
         // alloc
         MatrixXt features(mDim, cols);
 
@@ -157,35 +157,35 @@ public:
         NumericalType vmin, scale;
         normalize(indata, pos, &vmin, &scale);
 
-        // for each part
+        // prepare
         PCAWhitening<NumericalType> pca(mDim);
         Normalization<NumericalType> elemnorm(mDim);
         RBFHistogram<NumericalType> rbf(mDim, mHistSigma);
-        VectorXt tmp(mK);
         NumericalType s[(uint)mWavelet], w[(uint)mWavelet];
         WaveletCoefficients<NumericalType>::lookup(mWavelet, s, w);
         FastDWT<NumericalType> dwt(mDim);
+
+        // extract feature windows from normalized series window
+        for (uint k = 0; k <= flimit; ++k)
+        {
+            for (uint f = 0; f < mDim; ++f)
+            {
+                features(f, k) = scale * (indata[pos + k + f] - vmin);
+            }
+            dwt.compute(features.col(k).data(), s, w, (uint)mWavelet);
+        }
+
+        // apply normalization + whitening
+        elemnorm.applyParamsInPlace(&features, norm);
+        pca.applyTransformInPlace(&features, wt);
+
+        // compute part signatures
+        VectorXt tmp(mK);
+        const uint partsize = features.cols() / mParts;
         for (uint p = 0; p < mParts; ++p)
         {
-            const uint partpos = pos + p * partSize;
-            // extract feature windows from normalized series window
-            for (uint k = 0; k <= flimit; ++k)
-            {
-                for (uint f = 0; f < mDim; ++f)
-                {
-                    features(f, k) = scale * (indata[partpos + k + f] - vmin);
-                    //std::cerr << (partpos + k + f) << std::endl;
-                }
-                dwt.compute(features.col(k).data(), s, w, (uint)mWavelet);
-            }
-            // apply normalization + whitening
-            elemnorm.applyParamsInPlace(&features, norm);
-            pca.applyTransformInPlace(&features, wt);
-            rbf.compute(&tmp, features, words);
-
-            //std::cerr << features.transpose() << std::endl;
+            rbf.compute(&tmp, features.block(0, p * partsize, mDim, partsize), words);
             sig->block(p * mK, 0, mK, 1) = tmp;
-            //std::cerr << sig->transpose() << std::endl;
         }
     }
 
@@ -225,7 +225,7 @@ public:
         FastDWT<NumericalType> dwt(mDim);
 
         // dump activation
-        const uint partSize = mSWindow / mParts;
+        const uint partSize = (mSWindow - mDim + 1u) / mParts;
         ofs.open(activation.c_str(), std::ios::out);
         for (uint p = 0; p < mParts; ++p)
         {

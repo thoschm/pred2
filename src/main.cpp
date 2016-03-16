@@ -77,7 +77,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 #define SAMPLES 10000u
 #define K 10u
-#define WINDOW 1000
+#define WINDOW 1031
 #define AHEAD 100
 #define FEATURE 32
 #define WAVELET 8
@@ -118,6 +118,7 @@ int main(int argc, char **argv)
     std::cerr << "signature:\n" << hist.transpose() << std::endl;
 
     collector.dumpBasisActivation("sig.txt", "act.txt", indata, words, hist, np, wt, INDEX);
+
 
     // create labeled samples
     uint limit = traindata.size() - WINDOW - AHEAD;
