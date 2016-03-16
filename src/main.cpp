@@ -76,12 +76,12 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 
 #define SAMPLES 10000u
-#define K 20u
-#define WINDOW 300
-#define AHEAD 50
-#define FEATURE 128
+#define K 10u
+#define WINDOW 1000
+#define AHEAD 100
+#define FEATURE 32
 #define WAVELET 8
-#define PARTS 2
+#define PARTS 10
 
 #define INDEX 12500
 
@@ -144,6 +144,8 @@ int main(int argc, char **argv)
     wnnc.dump("space.txt");
 
     limit = veridata.size() - WINDOW - AHEAD;
+    std::vector<float> outvec(veridata.size(), 0.0f),
+                       wrong(veridata.size(), 0.0f);
     uint all = 0,
          correct = 0;
     for (uint i = 0; i <= limit; ++i)
@@ -158,7 +160,12 @@ int main(int argc, char **argv)
             if (res.category == 1u)
             {
                 std::cerr << "!";
+                outvec[i + WINDOW + AHEAD - 1] = veridata[i + WINDOW + AHEAD - 1];
                 ++correct;
+            }
+            else
+            {
+                wrong[i + WINDOW + AHEAD - 1] = veridata[i + WINDOW + AHEAD - 1];
             }
         }
         else
@@ -166,14 +173,20 @@ int main(int argc, char **argv)
             if (res.category == 0u)
             {
                 std::cerr << "!";
+                outvec[i + WINDOW + AHEAD - 1] = veridata[i + WINDOW + AHEAD - 1];
                 ++correct;
+            }
+            else
+            {
+                wrong[i + WINDOW + AHEAD - 1] = veridata[i + WINDOW + AHEAD - 1];
             }
         }
         ++all;
         std::cerr << std::endl;
     }
     std::cout << "CORRECT: " << correct << "/" << all << " (" << (100.0 * correct / all) << "%)" << std::endl;
-
+    dumpSequence(outvec, "correct.txt");
+    dumpSequence(wrong, "wrong.txt");
 
     std::ofstream ofs;
  /*   ofs.open("centroids.txt", std::ios::out);

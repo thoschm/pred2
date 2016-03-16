@@ -42,7 +42,7 @@ public:
                     const uint codeWords,
                     const uint parts,
                     const WaveletType wavelet = D4_WAVELET,
-                    const NumericalType histSigma = (NumericalType)0.5) : mSWindow(seriesWindow),
+                    const NumericalType histSigma = (NumericalType)1.0) : mSWindow(seriesWindow),
                                                                           mDim(featureSize),
                                                                           mK(codeWords),
                                                                           mParts(parts),

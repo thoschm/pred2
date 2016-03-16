@@ -76,7 +76,7 @@ public:
             // prevent instabilities
             if (sum < (NumericalType)1e-5)
             {
-                std::cerr << "RBFHistogram: SKIPPED SAMPLE (reduce sigma if this happens too often)\n";
+                //std::cerr << "RBFHistogram: SKIPPED SAMPLE (reduce sigma if this happens too often)\n";
                 continue;
             }
             // normalize and add to histogram
