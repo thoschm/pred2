@@ -75,7 +75,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 }
 
 
-#define SAMPLES 10000u
+#define SAMPLES 20000u
 #define K 10u
 #define WINDOW 1031
 #define AHEAD 100
@@ -89,7 +89,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 int main(int argc, char **argv)
 {
     std::vector<float> indata;
-    loadSequence(&indata, "chart5.txt");
+    loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
         //indata.push_back((i % 7 == 0) ? 2.0 : 5.0);
@@ -98,9 +98,9 @@ int main(int argc, char **argv)
     }
     dumpSequence(indata, "seq.txt");
 
-    const uint halfsize = 0.8 * indata.size();
-    std::vector<float> traindata(indata.begin(), indata.begin() + halfsize);
-    std::vector<float> veridata(indata.begin() + halfsize, indata.end());
+    const uint halfsize = 0.7 * indata.size();
+    std::vector<float> traindata = indata;//(indata.begin(), indata.begin() + halfsize);
+    std::vector<float> veridata = indata;//(indata.begin() + halfsize, indata.end());
     dumpSequence(traindata, "traindata.txt");
     dumpSequence(veridata, "veridata.txt");
 
@@ -139,7 +139,7 @@ int main(int argc, char **argv)
     }
     std::cerr << std::endl;
 
-    WeightedNNClassifier<float> wnnc(K * PARTS, 2u, 49u);
+    WeightedNNClassifier<float> wnnc(K * PARTS, 2u, 99u);
     wnnc.attach(&vec);
     wnnc.train();
     wnnc.dump("space.txt");

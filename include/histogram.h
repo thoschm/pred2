@@ -56,38 +56,17 @@ public:
             return;
         }
 
-        uint cnt = 0;
         const uint dsize = indata.cols(),
                    wsize = words.cols();
-        VectorXt vec(wsize);
         // compute euclidean distance to every single code word
-        // and normalize the resulting code vector
         for (uint i = 0; i < dsize; ++i)
         {
             // compute euclidean distance to each codeword and apply rbf
-            NumericalType sum = (NumericalType)0.0;
             for (uint k = 0; k < wsize; ++k)
             {
                 const NumericalType dist = (indata.col(i) - words.col(k)).norm();
-                vec(k) = std::exp(-mSigma * dist);
-                sum += vec(k);
-                //std::cerr << "word " << k << ", " << dist << "   " << std::exp(-mSigma * dist) << std::endl;
+                (*out)[k] += std::exp(-mSigma * dist);
             }
-            // prevent instabilities
-            if (sum < (NumericalType)1e-5)
-            {
-                //std::cerr << "RBFHistogram: SKIPPED SAMPLE (reduce sigma if this happens too often)\n";
-                continue;
-            }
-            // normalize and add to histogram
-            *out += vec / sum;
-            ++cnt;
-        }
-
-        // normalize histogram
-        if (cnt > 1u)
-        {
-            *out /= (NumericalType)cnt;
         }
     }
 
