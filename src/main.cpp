@@ -75,7 +75,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 }
 
 
-#define SAMPLES 20000u
+#define SAMPLES 10000u
 #define K 10u
 #define WINDOW 1031
 #define AHEAD 100
@@ -89,11 +89,11 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 int main(int argc, char **argv)
 {
     std::vector<float> indata;
-    loadSequence(&indata, "chart.txt");
+    //loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
         //indata.push_back((i % 7 == 0) ? 2.0 : 5.0);
-        //indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
     dumpSequence(indata, "seq.txt");
@@ -106,11 +106,13 @@ int main(int argc, char **argv)
 
 
     SeriesCollector<float> collector(WINDOW, FEATURE, K, PARTS, (WaveletType)WAVELET);
+    SeriesCollector<float>::MatrixXt features;
     SeriesCollector<float>::MatrixXt words(FEATURE, K);
 
     WhiteningTransform<float> wt(FEATURE);
     NormParams<float> np(FEATURE);
-    collector.codeWords(&words, &np, &wt, traindata);
+    collector.append(&features, traindata);
+    collector.codeWords(&words, &np, &wt, &features);
     std::cerr << words.transpose() << std::endl << std::endl;
 
     SeriesCollector<float>::VectorXt hist(K * PARTS);

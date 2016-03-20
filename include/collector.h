@@ -50,18 +50,83 @@ public:
                                                                           mHistSigma(histSigma)
     { }
 
-    // compute code words
-    void codeWords(MatrixXt *words,
-                   NormParams<NumericalType> *norm,
-                   WhiteningTransform<NumericalType> *wt,
-                   const std::vector<NumericalType> &indata) const
+    // import
+    void append(MatrixXt *features, const std::vector<NumericalType> &indata) const
     {
-        words->setZero();
-
         // some checks
         if (indata.size() < mSWindow)
         {
             std::cerr << "SeriesCollector: need more samples for given window size\n";
+            return;
+        }
+        if (mSWindow < mDim)
+        {
+            std::cerr << "SeriesCollector: feature window should be much smaller than series window\n";
+            return;
+        }
+        if (mDim < 2u)
+        {
+            std::cerr << "SeriesCollector: need more dimensions\n";
+            return;
+        }
+        if (!FastDWT<NumericalType>::isPow2(mDim))
+        {
+            std::cerr << "SeriesCollector: feature dimension is not a power of 2\n";
+            return;
+        }
+        if (features->size() > 0 && features->rows() != mDim)
+        {
+            std::cerr << "SeriesCollector: feature container has invalid row count\n";
+            return;
+        }
+
+        const uint slimit = indata.size() - mSWindow, // series window
+                   flimit = mSWindow - mDim;          // feature window
+
+        // this will need lots of memory
+        const uint cols = (slimit + 1u) * (flimit + 1u);
+        const uint prev = features->cols();
+        features->conservativeResize(mDim, prev + cols);
+        std::cerr << "columns appended: " << cols << std::endl;
+
+        // collect
+        uint cnt = 0;
+        NumericalType s[(uint)mWavelet], w[(uint)mWavelet];
+        WaveletCoefficients<NumericalType>::lookup(mWavelet, s, w);
+        FastDWT<NumericalType> dwt(mDim);
+        for (uint i = 0; i <= slimit; ++i)
+        {
+            // normalze current window to 0 - 1
+            NumericalType vmin, scale;
+            normalize(indata, i, &vmin, &scale);
+
+            // extract feature windows from normalized series window
+            for (uint k = 0; k <= flimit; ++k)
+            {
+                const uint fidx = prev + cnt;
+                for (uint f = 0; f < mDim; ++f)
+                {
+                    (*features)(f, fidx) = scale * (indata[i + k + f] - vmin);
+                }
+                dwt.compute((*features).col(fidx).data(), s, w, (uint)mWavelet);
+                ++cnt;
+            }
+        }
+        std::cerr << "vectors seen: " << cnt << std::endl;
+    }
+
+    // compute code words
+    void codeWords(MatrixXt *words,
+                   NormParams<NumericalType> *norm,
+                   WhiteningTransform<NumericalType> *wt,
+                   MatrixXt *indata) const
+    {
+        words->setZero();
+
+        // some checks
+        if (indata->rows() != mDim)
+        {
+            std::cerr << "SeriesCollector: invalid indata row count\n";
             return;
         }
         if (words->rows() != mDim)
@@ -252,68 +317,36 @@ public:
         ofs.close();
     }
 
+
+
 private:
     // extract features and compute code words
     void collect(MatrixXt *words,
                  NormParams<NumericalType> *norm,
                  WhiteningTransform<NumericalType> *wt,
-                 const std::vector<NumericalType> &indata) const
+                 MatrixXt *indata) const
     {
-        const uint slimit = indata.size() - mSWindow, // series window
-                   flimit = mSWindow - mDim;          // feature window
-
-        // this will need lots of memory
-        const uint cols = (slimit + 1u) * (flimit + 1u);
-        MatrixXt features(mDim, cols);
-        std::cerr << "columns allocated: " << cols << std::endl;
-
-        // collect
-        uint cnt = 0;
-        NumericalType s[(uint)mWavelet], w[(uint)mWavelet];
-        WaveletCoefficients<NumericalType>::lookup(mWavelet, s, w);
-        FastDWT<NumericalType> dwt(mDim);
-        for (uint i = 0; i <= slimit; ++i)
-        {
-            // normalze current window to 0 - 1
-            NumericalType vmin, scale;
-            normalize(indata, i, &vmin, &scale);
-
-            // extract feature windows from normalized series window
-            for (uint k = 0; k <= flimit; ++k)
-            {
-                for (uint f = 0; f < mDim; ++f)
-                {
-                    features(f, cnt) = scale * (indata[i + k + f] - vmin);
-                }
-                dwt.compute(features.col(cnt).data(), s, w, (uint)mWavelet);
-                ++cnt;
-            }
-        }
-        std::cerr << "vectors seen: " << cnt << std::endl;
-
-        //std::cerr << features.transpose() << std::endl;
-
         // begin normalization
         std::cout << "compute dimension-wise normalization..." << std::endl;
         Normalization<NumericalType> elemnorm(mDim);
-        elemnorm.computeParams(norm, features);
+        elemnorm.computeParams(norm, *indata);
         std::cout << "apply normalization..." << std::endl;
-        elemnorm.applyParamsInPlace(&features, *norm);
+        elemnorm.applyParamsInPlace(indata, *norm);
         //std::cerr << features.transpose() << std::endl;
 
         // begin whitening
         std::cerr << "compute whitening transform..." << std::endl;
         PCAWhitening<NumericalType> pca(mDim);
-        pca.computeTransform(wt, features);
+        pca.computeTransform(wt, *indata);
         std::cout << "apply whitening..." << std::endl;
-        pca.applyTransformInPlace(&features, *wt);
+        pca.applyTransformInPlace(indata, *wt);
         //std::cerr << features.transpose() << std::endl;
 
         // clustering
         std::cout << "clustering..." << std::endl;
         KMeans<NumericalType> kmeans(mDim, mK, 10u * mK, (NumericalType)1e-5, 20u);
         std::vector<uint> freq;
-        kmeans.compute(words, &freq, features);
+        kmeans.compute(words, &freq, *indata);
         for (uint i = 0; i < mK; ++i)
         {
             std::cerr << "cluster " << i << ": " << freq[i] << " supporters" << std::endl;
