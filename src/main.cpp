@@ -8,6 +8,7 @@
 #include <collector.h>
 #include <norm.h>
 #include <wnnc.h>
+#include <resize.h>
 
 
 using namespace BOF;
