@@ -76,7 +76,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 }
 
 
-#define SAMPLES 10000u
+#define SAMPLES 30u
 #define K 10u
 #define WINDOW 1031
 #define AHEAD 100
@@ -97,7 +97,12 @@ int main(int argc, char **argv)
         indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
+
     dumpSequence(indata, "seq.txt");
+    Interpolator<float>::dump("interp.txt", indata, LANCZOS6, 0.01f);
+    return 0;
+
+
 
     const uint halfsize = 0.7 * indata.size();
     std::vector<float> traindata = indata;//(indata.begin(), indata.begin() + halfsize);

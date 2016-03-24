@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cmath>
 #include <float.h>
+#include <vector>
 
 
 ////////////////////////////////
@@ -22,7 +23,9 @@ enum FilterType
 {
     LANCZOS2 = 2,
     LANCZOS3 = 3,
-    LANCZOS4 = 4
+    LANCZOS4 = 4,
+    LANCZOS5 = 5,
+    LANCZOS6 = 6
 };
 
 
@@ -67,6 +70,42 @@ public:
         }
         ofs.close();
     }
+
+    static void dump(const std::string &file,
+                     const std::vector<NumericalType> &samples,
+                     const FilterType type,
+                     const NumericalType step)
+    {
+        std::ofstream ofs;
+        ofs.open(file.c_str(), std::ios::out);
+        const NumericalType limit = (NumericalType)(samples.size() - 1u);
+        for (NumericalType f = (NumericalType)0.0; f <= limit; f += step)
+        {
+            ofs << f << " " << peek(samples, type, f) << std::endl;
+        }
+        ofs.close();
+    }
+
+    static NumericalType peek(const std::vector<NumericalType> &samples,
+                              const FilterType type,
+                              const NumericalType x)
+    {
+        const long lobes  = (long)type,
+                   xflr   = (long)std::floor(x),
+                   idxmin = std::max(xflr - lobes + 1l, (long)0),
+                   idxmax = std::min(xflr + lobes, (long)samples.size() - 1l);
+        NumericalType sum = (NumericalType)0.0;
+        for (long idx = idxmin; idx <= idxmax; ++idx)
+        {
+            sum += samples[idx] * lanczos(type, x - (NumericalType)idx);
+        }
+        return sum;
+    }
+
+    static void resize(std::vector<NumericalType> *out,
+                       const std::vector<NumericalType> &samples,
+                       const FilterType type)
+    {}
 };
 
 }
