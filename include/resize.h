@@ -25,7 +25,9 @@ enum FilterType
     LANCZOS3 = 3,
     LANCZOS4 = 4,
     LANCZOS5 = 5,
-    LANCZOS6 = 6
+    LANCZOS6 = 6,
+    LANCZOS7 = 7,
+    LANCZOS8 = 8
 };
 
 
@@ -103,9 +105,18 @@ public:
     }
 
     static void resize(std::vector<NumericalType> *out,
+                       const uint outSamples,
                        const std::vector<NumericalType> &samples,
                        const FilterType type)
-    {}
+    {
+        out->clear();
+        out->resize(outSamples);
+        const NumericalType step = (NumericalType)(samples.size() - 1u) / (NumericalType)outSamples;
+        for (uint i = 0; i < outSamples; ++i)
+        {
+            out->at(i) = peek(samples, type, step * (NumericalType)i);
+        }
+    }
 };
 
 }
