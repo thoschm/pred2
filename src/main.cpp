@@ -98,15 +98,6 @@ int main(int argc, char **argv)
         //indata.push_back(i);
     }
 
-    dumpSequence(indata, "seq.txt");
-    Interpolator<float>::resize(&interp, 5000u, indata, LANCZOS4);
-    dumpSequence(interp, "interp.txt");
-
-
-    return 0;
-
-
-
     const uint halfsize = 0.7 * indata.size();
     std::vector<float> traindata = indata;//(indata.begin(), indata.begin() + halfsize);
     std::vector<float> veridata = indata;//(indata.begin() + halfsize, indata.end());
