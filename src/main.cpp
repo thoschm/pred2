@@ -10,6 +10,8 @@
 #include <wnnc.h>
 #include <resize.h>
 
+#include <interface.h>
+
 
 using namespace BOF;
 
@@ -76,7 +78,9 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 }
 
 
-#define SAMPLES 2000u
+#define SAMPLES 10000u
+
+/*
 #define K 10u
 #define WINDOW 1031
 #define AHEAD 100
@@ -85,7 +89,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 #define PARTS 10
 
 #define INDEX 12500
-
+*/
 
 int main(int argc, char **argv)
 {
@@ -98,11 +102,48 @@ int main(int argc, char **argv)
         //indata.push_back(i);
     }
 
+
     const uint halfsize = 0.7 * indata.size();
     std::vector<float> traindata = indata;//(indata.begin(), indata.begin() + halfsize);
     std::vector<float> veridata = indata;//(indata.begin() + halfsize, indata.end());
     dumpSequence(traindata, "traindata.txt");
     dumpSequence(veridata, "veridata.txt");
+
+
+    BOFParameters params;
+    BOFClassifier<float> cl(params);
+    BOFClassifier<float>::MatrixXt woo;
+    NormParams<float> normp(params.featureSize);
+    WhiteningTransform<float> whitetf(params.featureSize);
+    cl.codeWords(&woo, &normp, &whitetf, traindata);
+
+
+    PCAWhitening<float> pca(params.featureSize);
+    pca.inverseTransformInPlace(&woo, whitetf);
+    //std::cerr << words.transpose() << std::endl;
+    Normalization<float> elemnorm(params.featureSize);
+    elemnorm.inverseParamsInPlace(&woo, normp);
+
+
+    float s[(int)params.waveletType], w[(int)params.waveletType];
+    WaveletCoefficients<float>::lookup(params.waveletType, s, w);
+    FastDWT<float> dwt(params.featureSize);
+    std::ofstream ofs;
+    ofs.open("words.txt", std::ios::out);
+    for (uint k = 0; k < woo.cols(); ++k)
+    {
+        dwt.inverse(woo.col(k).data(), s, w, params.waveletType);
+        for (uint l = 0; l < params.featureSize; ++l)
+        {
+            ofs << l << " " << woo(l, k) << std::endl;
+        }
+        ofs << std::endl;
+    }
+    ofs.close();
+
+/*
+
+    return 0;
 
 
     SeriesCollector<float> collector(WINDOW, FEATURE, K, PARTS, (WaveletType)WAVELET);
@@ -192,10 +233,10 @@ int main(int argc, char **argv)
     dumpSequence(wrong, "wrong.txt");
 
     std::ofstream ofs;
- /*   ofs.open("centroids.txt", std::ios::out);
+   ofs.open("centroids.txt", std::ios::out);
     ofs << words.transpose() << std::endl;
     ofs.close();
-*/
+
 
 
     PCAWhitening<float> pca(FEATURE);
@@ -221,7 +262,7 @@ int main(int argc, char **argv)
     ofs.close();
 
 
-/*
+
     std::ofstream ofs;
     ofs.open("words.txt", std::ios::out);
     for (uint k = 0; k < K; ++k)
@@ -232,9 +273,9 @@ int main(int argc, char **argv)
         }
         ofs << std::endl;
     }
-    ofs.close();*/
+    ofs.close();
 
-/*
+
     NormalDistGenerator<float> n;
     KMeans<float>::MatrixXt mat(3, 2000);
     for (uint i = 0; i < 1000u; ++i)

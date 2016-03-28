@@ -111,7 +111,7 @@ public:
     {
         out->clear();
         out->resize(outSamples);
-        const NumericalType step = (NumericalType)(samples.size() - 1u) / (NumericalType)outSamples;
+        const NumericalType step = (NumericalType)samples.size() / (NumericalType)outSamples;
         for (uint i = 0; i < outSamples; ++i)
         {
             out->at(i) = peek(samples, type, step * (NumericalType)i);
