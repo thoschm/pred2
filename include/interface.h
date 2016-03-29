@@ -24,7 +24,8 @@ struct BOFParameters
          codeWords,
          numParts,
          scalingMin,
-         scalingStep;
+         scalingStep,
+         lookAhead;
     WaveletType waveletType;
     FilterType filterType;
     float signatureSigma;
@@ -35,6 +36,7 @@ struct BOFParameters
                       numParts(4u),
                       scalingMin(20u),
                       scalingStep(10u),
+                      lookAhead(10u),
                       waveletType(D8_WAVELET),
                       filterType(LANCZOS8),
                       signatureSigma(1.0f)
@@ -55,6 +57,7 @@ public:
     // for convenience
     typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> MatrixXt;
     typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, 1, Eigen::ColMajor> VectorXt;
+    typedef std::vector<Sample<NumericalType> > SampleVector;
 
     BOFClassifier(const BOFParameters &params) : mParams(params)
     { }
@@ -62,7 +65,7 @@ public:
     void codeWords(MatrixXt *words,
                    NormParams<NumericalType> *normParams,
                    WhiteningTransform<NumericalType> *whiteningTf,
-                   const std::vector<NumericalType> &indata)
+                   const std::vector<NumericalType> &indata) const
     {
         // prepare words
         words->resize(mParams.featureSize, mParams.codeWords);
@@ -89,6 +92,33 @@ public:
 
         // compute words
         collector.codeWords(words, normParams, whiteningTf, &features);
+    }
+
+    void signatures(SampleVector *out,
+                    const MatrixXt &words,
+                    const NormParams<NumericalType> &normParams,
+                    const WhiteningTransform<NumericalType> &whiteningTf,
+                    const std::vector<NumericalType> &indata) const
+    {
+        // prepare
+        out->clear();
+
+        // init collector
+        SeriesCollector<NumericalType> collector(mParams.windowSize,
+                                                 mParams.featureSize,
+                                                 mParams.codeWords,
+                                                 mParams.numParts,
+                                                 mParams.waveletType,
+                                                 mParams.signatureSigma);
+
+        // create signatures
+        const uint limit = indata.size() - mParams.windowSize - mParams.lookAhead;
+        const uint sigsize = mParams.codeWords * mParams.numParts;
+        for (uint i = 0; i <= limit; ++i)
+        {
+            out->push_back(Sample<NumericalType>(sigsize));
+            collector.signature(&(out->back().signature), normParams, whiteningTf, indata, words, i);
+        }
     }
 
 private:

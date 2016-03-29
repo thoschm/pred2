@@ -93,6 +93,39 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 int main(int argc, char **argv)
 {
+    std::vector<float> testdata;
+    testdata.push_back(1);
+    testdata.push_back(0);
+    testdata.push_back(0);
+
+    BOFClassifier<float>::MatrixXt words(3, 3);
+    words << 1.0f, 0.0f, 0.0f,
+             0.0f, 1.0f, 0.0f,
+             0.0f, 0.0f, 1.0f;
+
+    BOFParameters bp;
+    bp.codeWords = 3;
+    bp.featureSize = 3;
+    bp.lookAhead = 0;
+    bp.numParts = 1;
+    bp.windowSize = 3;
+    bp.signatureSigma = 1.0f;
+    BOFClassifier<float> clsf(bp);
+    BOFClassifier<float>::SampleVector vec;
+    NormParams<float> normparams(3);
+    WhiteningTransform<float> whiteningtf(3);
+    clsf.signatures(&vec, words, normparams, whiteningtf, testdata);
+    for (uint i = 0; i < vec.size(); ++i)
+    {
+        std::cerr << vec[i].signature.transpose() << std::endl;
+    }
+
+
+
+
+
+    return 0;
+
     std::vector<float> indata, interp;
     loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)

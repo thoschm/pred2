@@ -120,7 +120,7 @@ public:
         // check size
         if (!isPow2(windowSize))
         {
-            std::cerr << "input value count is not a power of 2." << std::endl;
+            std::cerr << "FastDWT: input value count is not a power of 2." << std::endl;
         }
         mTmp = (NumericalType *)malloc(windowSize * sizeof(NumericalType));
     }
