@@ -98,7 +98,8 @@ public:
                     const MatrixXt &words,
                     const NormParams<NumericalType> &normParams,
                     const WhiteningTransform<NumericalType> &whiteningTf,
-                    const std::vector<NumericalType> &indata) const
+                    const std::vector<NumericalType> &indata,
+                    uint (*const labelfunc)(const std::vector<NumericalType> &, const uint, const uint)) const
     {
         // prepare
         out->clear();
@@ -118,6 +119,8 @@ public:
         {
             out->push_back(Sample<NumericalType>(sigsize));
             collector.signature(&(out->back().signature), normParams, whiteningTf, indata, words, i);
+            const uint last = i + mParams.windowSize - 1u;
+            out->back().label = labelfunc(indata, last, last + mParams.lookAhead);
         }
     }
 

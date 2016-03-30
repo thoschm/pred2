@@ -90,12 +90,19 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 
 #define INDEX 12500
 */
+uint labelfunc(const std::vector<float> &data, const uint last, const uint ahead)
+{
+    return 0;
+}
+
 
 int main(int argc, char **argv)
 {
     std::vector<float> testdata;
     testdata.push_back(1);
     testdata.push_back(0);
+    testdata.push_back(0);
+    testdata.push_back(1);
     testdata.push_back(0);
 
     BOFClassifier<float>::MatrixXt words(3, 3);
@@ -107,14 +114,14 @@ int main(int argc, char **argv)
     bp.codeWords = 3;
     bp.featureSize = 3;
     bp.lookAhead = 0;
-    bp.numParts = 1;
-    bp.windowSize = 3;
+    bp.numParts = 3;
+    bp.windowSize = 5;
     bp.signatureSigma = 1.0f;
     BOFClassifier<float> clsf(bp);
     BOFClassifier<float>::SampleVector vec;
     NormParams<float> normparams(3);
     WhiteningTransform<float> whiteningtf(3);
-    clsf.signatures(&vec, words, normparams, whiteningtf, testdata);
+    clsf.signatures(&vec, words, normparams, whiteningtf, testdata, labelfunc);
     for (uint i = 0; i < vec.size(); ++i)
     {
         std::cerr << vec[i].signature.transpose() << std::endl;
