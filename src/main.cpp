@@ -92,53 +92,19 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 */
 uint labelfunc(const std::vector<float> &data, const uint last, const uint ahead)
 {
+    if (data[last] < data[ahead]) return 1u;
     return 0;
 }
 
 
 int main(int argc, char **argv)
 {
-    std::vector<float> testdata;
-    testdata.push_back(1);
-    testdata.push_back(0);
-    testdata.push_back(0);
-    testdata.push_back(1);
-    testdata.push_back(0);
-
-    BOFClassifier<float>::MatrixXt words(3, 3);
-    words << 1.0f, 0.0f, 0.0f,
-             0.0f, 1.0f, 0.0f,
-             0.0f, 0.0f, 1.0f;
-
-    BOFParameters bp;
-    bp.codeWords = 3;
-    bp.featureSize = 3;
-    bp.lookAhead = 0;
-    bp.numParts = 3;
-    bp.windowSize = 5;
-    bp.signatureSigma = 1.0f;
-    BOFClassifier<float> clsf(bp);
-    BOFClassifier<float>::SampleVector vec;
-    NormParams<float> normparams(3);
-    WhiteningTransform<float> whiteningtf(3);
-    clsf.signatures(&vec, words, normparams, whiteningtf, testdata, labelfunc);
-    for (uint i = 0; i < vec.size(); ++i)
-    {
-        std::cerr << vec[i].signature.transpose() << std::endl;
-    }
-
-
-
-
-
-    return 0;
-
     std::vector<float> indata, interp;
-    loadSequence(&indata, "chart.txt");
+    //loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
         //indata.push_back((i % 7 == 0) ? 2.0 : 5.0);
-        //indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
 
@@ -149,33 +115,41 @@ int main(int argc, char **argv)
     dumpSequence(traindata, "traindata.txt");
     dumpSequence(veridata, "veridata.txt");
 
+    BOFParameters bp;
+    BOFClassifier<float>::MatrixXt words(bp.featureSize, bp.codeWords);
+    BOFClassifier<float> clsf(bp);
+    BOFClassifier<float>::SampleVector vec;
+    NormParams<float> normparams(bp.featureSize);
+    WhiteningTransform<float> whiteningtf(bp.featureSize);
+    BOFClassifier<float>::MatrixXt features;
 
-    BOFParameters params;
-    BOFClassifier<float> cl(params);
-    BOFClassifier<float>::MatrixXt woo;
-    NormParams<float> normp(params.featureSize);
-    WhiteningTransform<float> whitetf(params.featureSize);
-    cl.codeWords(&woo, &normp, &whitetf, traindata);
-
-
-    PCAWhitening<float> pca(params.featureSize);
-    pca.inverseTransformInPlace(&woo, whitetf);
-    //std::cerr << words.transpose() << std::endl;
-    Normalization<float> elemnorm(params.featureSize);
-    elemnorm.inverseParamsInPlace(&woo, normp);
+    clsf.codeWords(&words, &normparams, &whiteningtf, traindata);
+    clsf.signatures(&vec, words, normparams, whiteningtf, traindata, labelfunc);
 
 
-    float s[(int)params.waveletType], w[(int)params.waveletType];
-    WaveletCoefficients<float>::lookup(params.waveletType, s, w);
-    FastDWT<float> dwt(params.featureSize);
+    WeightedNNClassifier<float> wnnc(bp.codeWords * bp.numParts, 2u, 99u);
+    wnnc.attach(&vec);
+    wnnc.train();
+    wnnc.dump("space.txt");
+
+
+    PCAWhitening<float> pca(bp.featureSize);
+    pca.inverseTransformInPlace(&words, whiteningtf);
+    Normalization<float> elemnorm(bp.featureSize);
+    elemnorm.inverseParamsInPlace(&words, normparams);
+
+
+    float s[(int)bp.waveletType], w[(int)bp.waveletType];
+    WaveletCoefficients<float>::lookup(bp.waveletType, s, w);
+    FastDWT<float> dwt(bp.featureSize);
     std::ofstream ofs;
     ofs.open("words.txt", std::ios::out);
-    for (uint k = 0; k < woo.cols(); ++k)
+    for (uint k = 0; k < words.cols(); ++k)
     {
-        dwt.inverse(woo.col(k).data(), s, w, params.waveletType);
-        for (uint l = 0; l < params.featureSize; ++l)
+        dwt.inverse(words.col(k).data(), s, w, bp.waveletType);
+        for (uint l = 0; l < bp.featureSize; ++l)
         {
-            ofs << l << " " << woo(l, k) << std::endl;
+            ofs << l << " " << words(l, k) << std::endl;
         }
         ofs << std::endl;
     }

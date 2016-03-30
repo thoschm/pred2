@@ -36,7 +36,7 @@ struct BOFParameters
                       numParts(4u),
                       scalingMin(20u),
                       scalingStep(10u),
-                      lookAhead(10u),
+                      lookAhead(50u),
                       waveletType(D8_WAVELET),
                       filterType(LANCZOS8),
                       signatureSigma(1.0f)
