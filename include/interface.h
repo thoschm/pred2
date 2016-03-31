@@ -32,9 +32,9 @@ struct BOFParameters
 
     BOFParameters() : windowSize(515u),
                       featureSize(16u),
-                      codeWords(3u),
-                      numParts(2u),
-                      scalingMin(20u),
+                      codeWords(10u),
+                      numParts(4u),
+                      scalingMin(50u),
                       scalingStep(10u),
                       lookAhead(50u),
                       waveletType(D8_WAVELET),
@@ -57,7 +57,6 @@ public:
     // for convenience
     typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> MatrixXt;
     typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, 1, Eigen::ColMajor> VectorXt;
-    typedef std::vector<Sample<NumericalType> > SampleVector;
 
     BOFClassifier(const BOFParameters &params) : mParams(params)
     { }
@@ -94,37 +93,21 @@ public:
         collector.codeWords(words, normParams, whiteningTf, &features);
     }
 
-    /*
-    void signatures(SampleVector *out,
-                    const MatrixXt &words,
-                    const NormParams<NumericalType> &normParams,
-                    const WhiteningTransform<NumericalType> &whiteningTf,
-                    const std::vector<NumericalType> &indata,
-                    uint (*const labelfunc)(const std::vector<NumericalType> &, const uint, const uint)) const
+    void labels(std::vector<uint> *out,
+                const std::vector<NumericalType> &indata,
+                uint (*const labelfunc)(const std::vector<NumericalType> &, const uint, const uint)) const
     {
-        // prepare
-        out->clear();
-
-        // init collector
-        SeriesCollector<NumericalType> collector(mParams.windowSize,
-                                                 mParams.featureSize,
-                                                 mParams.codeWords,
-                                                 mParams.numParts,
-                                                 mParams.waveletType,
-                                                 mParams.signatureSigma);
-
         // create signatures
         const uint limit = indata.size() - mParams.windowSize - mParams.lookAhead;
-        const uint sigsize = mParams.codeWords * mParams.numParts;
+        out->clear();
+        out->resize(limit + 1u);
         for (uint i = 0; i <= limit; ++i)
         {
-            out->push_back(Sample<NumericalType>(sigsize));
-            collector.signature(&(out->back().signature), normParams, whiteningTf, indata, words, i);
             const uint last = i + mParams.windowSize - 1u;
-            out->back().label = labelfunc(indata, last, last + mParams.lookAhead);
+            out->at(i) = labelfunc(indata, last, last + mParams.lookAhead);
         }
     }
-    */
+
     void signatures(MatrixXt *features,
                     const MatrixXt &words,
                     const NormParams<NumericalType> &normParams,
@@ -152,6 +135,29 @@ public:
             collector.signature(&tmp, normParams, whiteningTf, indata, words, i);
             features->col(i) = tmp;
         }
+    }
+
+    void signature(MatrixXt *sig,
+                   const MatrixXt &words,
+                   const NormParams<NumericalType> &normParams,
+                   const WhiteningTransform<NumericalType> &whiteningTf,
+                   const std::vector<NumericalType> &indata,
+                   const uint index = UINT_MAX) const
+    {
+        const uint sigsize = mParams.codeWords * mParams.numParts;
+        sig->resize(sigsize, 1u);
+        sig->setZero();
+
+        // init collector
+        VectorXt tmp(sigsize);
+        SeriesCollector<NumericalType> collector(mParams.windowSize,
+                                                 mParams.featureSize,
+                                                 mParams.codeWords,
+                                                 mParams.numParts,
+                                                 mParams.waveletType,
+                                                 mParams.signatureSigma);
+        collector.signature(&tmp, normParams, whiteningTf, indata, words, index);
+        sig->col(0) = tmp;
     }
 
     void forwardNormWhite(MatrixXt *data, NormParams<NumericalType> *norm, WhiteningTransform<NumericalType> *wtf, const uint dim)

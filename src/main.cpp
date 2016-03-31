@@ -100,11 +100,11 @@ uint labelfunc(const std::vector<float> &data, const uint last, const uint ahead
 int main(int argc, char **argv)
 {
     std::vector<float> indata, interp;
-    //loadSequence(&indata, "chart.txt");
+    loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
         //indata.push_back((i % 7 == 0) ? 2.0 : 5.0);
-        indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        //indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
 
@@ -128,12 +128,20 @@ int main(int argc, char **argv)
 
     NormParams<float> np2(sigs.rows());
     WhiteningTransform<float> wtf2(sigs.rows());
-
-    std::cerr << sigs.col(0).transpose() << std::endl;
     clsf.forwardNormWhite(&sigs, &np2, &wtf2, sigs.rows());
-    std::cerr << sigs.col(0).transpose() << std::endl;
-    clsf.inverseNormWhite(&sigs, np2, wtf2, sigs.rows());
-    std::cerr << sigs.col(0).transpose() << std::endl;
+
+    std::vector<uint> label;
+    clsf.labels(&label, traindata, labelfunc);
+
+    WeightedNNClassifier<float> wnnc(bp.codeWords * bp.numParts, 2u, 99u);
+    wnnc.attach(&sigs, &label);
+    std::cerr << "train..." << std::endl;
+    wnnc.train();
+    std::cerr << "dump..." << std::endl;
+    wnnc.dump("space.txt");
+
+
+
 
 
     PCAWhitening<float> pca(bp.featureSize);

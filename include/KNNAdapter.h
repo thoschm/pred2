@@ -19,6 +19,7 @@ namespace BOF
 ////////////////////////////////////////
 template <int VecDim,
           typename Container,
+          typename ItemType,
           typename Accessor,
           typename NumericalType>
 class GenericKNNAdapter;
@@ -26,13 +27,14 @@ class GenericKNNAdapter;
 
 template <int VecDim,
           typename Container,
+          typename ItemType,
           typename Accessor,
           typename NumericalType>
 struct KDTree
 {
     typedef nanoflann::KDTreeSingleIndexAdaptor
-            <nanoflann::L2_Adaptor<NumericalType, GenericKNNAdapter<VecDim, Container, Accessor, NumericalType> >,
-            GenericKNNAdapter<VecDim, Container, Accessor, NumericalType>, VecDim, uint> type;
+            <nanoflann::L2_Adaptor<NumericalType, GenericKNNAdapter<VecDim, Container, ItemType, Accessor, NumericalType> >,
+            GenericKNNAdapter<VecDim, Container, ItemType, Accessor, NumericalType>, VecDim, uint> type;
 };
 
 
@@ -48,6 +50,7 @@ struct KDTree
 ///////////////////////////////////////////////////
 template <int VecDim,
           typename Container,
+          typename ItemType,
           typename Accessor,
           typename NumericalType>
 class GenericKNNAdapter
@@ -85,6 +88,7 @@ public:
         if (mTree != NULL) delete mTree;
         mTree = new typename KDTree<VecDim,
                                     Container,
+                                    ItemType,
                                     Accessor,
                                     NumericalType>::type(mDim,
                                                          *this,
@@ -99,7 +103,7 @@ public:
     }
 
     // get neighbors within squared radius
-    const IdxDistPairs &radiusSearch(const typename Container::value_type &item,
+    const IdxDistPairs &radiusSearch(const ItemType &item,
                                      NumericalType radiusSqr)
     {
         mPairs.clear();
@@ -116,7 +120,7 @@ public:
     }
 
     // get pairs of indices and Eu. distances for K nearest neighbors
-    IdxDistPairs nnSearchNSqrt(const typename Container::value_type &item,
+    IdxDistPairs nnSearchNSqrt(const ItemType &item,
                                uint K) const
     {
         IdxDistPairs res;
@@ -142,16 +146,16 @@ public:
     // ...stripped down for publication...
 
     // get direct access to tree
-    const typename KDTree<VecDim, Container, Accessor, NumericalType>::type *getTree()
+    const typename KDTree<VecDim, Container, ItemType, Accessor, NumericalType>::type *getTree()
     {
         return mTree;
     }
 
     // now some nanoflann stuff
-    uint kdtree_get_point_count() const { return mList->size(); }
+    uint kdtree_get_point_count() const { return mList->cols(); } // TODO: this is crap: .cols()
     NumericalType kdtree_get_pt(uint idx, int dim) const
     {
-        return Accessor::at((*mList)[idx], dim);
+        return Accessor::at((*mList).col(idx), dim); // TODO: this is crap: .col(idx)
     }
     template <class BBOX>
     bool kdtree_get_bbox(BBOX &bb) const { return false; }
@@ -163,33 +167,12 @@ private:
     // actual k-d-tree
     typename KDTree<VecDim,
                     Container,
+                    ItemType,
                     Accessor,
                     NumericalType>::type *mTree;
     int mDim;
     IdxDistPairs mPairs;
 };
-
-
-////////////////////////////////////////////
-// The same with eigen vector
-////////////////////////////////////////////
-typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > PointVector3f;
-typedef std::vector<Eigen::Vector3d, Eigen::aligned_allocator<Eigen::Vector3d> > PointVector3d;
-
-template <typename NumericalType>
-struct PointAccessor
-{
-private:
-    PointAccessor();
-    PointAccessor(const PointAccessor &other);
-    PointAccessor &operator=(const PointAccessor &other);
-
-public:
-    static NumericalType at(const Eigen::Matrix<NumericalType, 3, 1> &item, const uint i) { return item[i]; }
-};
-
-typedef GenericKNNAdapter<3, PointVector3f, PointAccessor<float>, float> PointVectorKNNAdapter3f;
-typedef GenericKNNAdapter<3, PointVector3d, PointAccessor<double>, double> PointVectorKNNAdapter3d;
 
 
 // namespace

@@ -28,24 +28,6 @@ struct ClassificationResult
 
 
 ////////////////////////////////////////
-// LABELED SAMPLE
-////////////////////////////////////////
-template <typename NumericalType>
-struct Sample
-{
-    // for convenience
-    typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, 1, Eigen::ColMajor> VectorXt;
-    VectorXt signature;
-    uint label;
-    Sample(const uint dim)
-    {
-        signature = VectorXt(dim);
-        label = 0;
-    }
-};
-
-
-////////////////////////////////////////
 // SAMPLE ACCESSOR
 ////////////////////////////////////////
 template <typename NumericalType>
@@ -57,7 +39,11 @@ private:
     SampleAccessor &operator=(const SampleAccessor &other);
 
 public:
-    static NumericalType at(const Sample<NumericalType> &item, const uint i) { return item.signature(i); }
+    // for convenience
+    typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> MatrixXt;
+    typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, 1, Eigen::ColMajor> VectorXt;
+
+    static NumericalType at(const VectorXt &item, const uint i) { return item(i); }
 };
 
 
@@ -72,8 +58,10 @@ class WeightedNNClassifier
     WeightedNNClassifier &operator=(const WeightedNNClassifier &other);
 
 public:
-    typedef std::vector<Sample<NumericalType> > SampleContainer;
-    typedef typename GenericKNNAdapter<-1, SampleContainer, SampleAccessor<NumericalType>, NumericalType>::IdxDistPairs IdxDistPairs;
+    // for convenience
+    typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> MatrixXt;
+    typedef Eigen::Matrix<NumericalType, Eigen::Dynamic, 1, Eigen::ColMajor> VectorXt;
+    typedef typename GenericKNNAdapter<-1, MatrixXt, VectorXt, SampleAccessor<NumericalType>, NumericalType>::IdxDistPairs IdxDistPairs;
 
     // ctor
     WeightedNNClassifier(const uint dim,
@@ -82,21 +70,33 @@ public:
                          const NumericalType gamma = (NumericalType)3.0) : mDim(dim),
                                                                            mCateg(categories),
                                                                            mN(N), mGamma(gamma),
-                                                                           mContainer(NULL)
+                                                                           mContainer(NULL),
+                                                                           mLabels(NULL)
     { }
 
     // get data pointer
-    void attach(const SampleContainer *container)
+    void attach(const MatrixXt *container, const std::vector<uint> *labels)
     {
+        if (container->rows() != mDim)
+        {
+            std::cerr << "WNNC: container rows must be equal to feature dim.\n";
+            return;
+        }
+        if (container->cols() != labels->size())
+        {
+            std::cerr << "WNNC: invalid number of labels.\n";
+            return;
+        }
         mContainer = container;
+        mLabels = labels;
     }
 
     // implement classification
-    ClassificationResult<NumericalType> classify(const Sample<NumericalType> &sample) const
+    ClassificationResult<NumericalType> classify(const VectorXt &sample) const
     {
         if (!mKnn.hasTree())
         {
-            std::cerr << "NNCLASSIFIER: call prepare() first.\n";
+            std::cerr << "WNNC: call train() first.\n";
             return ClassificationResult<NumericalType>();
         }
 
@@ -112,7 +112,7 @@ public:
             // normalize distance
             dist = nn[i].second / (nn[limit].second + (NumericalType)1e-8);
             //std::cerr << "dist: " << dist << std::endl;
-            categ[mContainer->at(nn[i].first).label] += std::exp(-mGamma * dist);
+            categ[mLabels->at(nn[i].first)] += std::exp(-mGamma * dist);
         }
 
         // find category with biggest weight
@@ -152,7 +152,7 @@ public:
     {
         if (mContainer == NULL || mContainer->size() == 0)
         {
-            std::cerr << "NNCLASSIFIER: no training samples available.\n";
+            std::cerr << "WNNC: no training samples available.\n";
             return;
         }
         mKnn.attach(mContainer, mDim);
@@ -164,22 +164,23 @@ public:
         std::ofstream of;
         of.open(file.c_str(), std::ios::out);
         of << "# dim1, dim2, dim3, ..., dimN, classID\n";
-        for (uint i = 0; i < mContainer->size(); ++i)
+        for (uint i = 0; i < mContainer->cols(); ++i)
         {
             for (uint k = 0; k < mDim; ++k)
             {
-                of << mContainer->at(i).signature(k) << " ";
+                of << (*mContainer)(k, i) << " ";
             }
-            of << mContainer->at(i).label << "\n";
+            of << mLabels->at(i) << "\n";
         }
         of.close();
     }
 
 private:
-    GenericKNNAdapter<-1, SampleContainer, SampleAccessor<NumericalType>, NumericalType> mKnn;
+    GenericKNNAdapter<-1, MatrixXt, VectorXt, SampleAccessor<NumericalType>, NumericalType> mKnn;
     uint mDim, mCateg, mN;
     NumericalType mGamma;
-    const SampleContainer *mContainer;
+    const MatrixXt *mContainer;
+    const std::vector<uint> *mLabels;
 };
 
 // namespace
