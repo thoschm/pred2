@@ -118,19 +118,22 @@ int main(int argc, char **argv)
     BOFParameters bp;
     BOFClassifier<float>::MatrixXt words(bp.featureSize, bp.codeWords);
     BOFClassifier<float> clsf(bp);
-    BOFClassifier<float>::SampleVector vec;
+    BOFClassifier<float>::MatrixXt sigs;
     NormParams<float> normparams(bp.featureSize);
     WhiteningTransform<float> whiteningtf(bp.featureSize);
     BOFClassifier<float>::MatrixXt features;
 
     clsf.codeWords(&words, &normparams, &whiteningtf, traindata);
-    clsf.signatures(&vec, words, normparams, whiteningtf, traindata, labelfunc);
+    clsf.signatures(&sigs, words, normparams, whiteningtf, traindata);
 
+    NormParams<float> np2(sigs.rows());
+    WhiteningTransform<float> wtf2(sigs.rows());
 
-    WeightedNNClassifier<float> wnnc(bp.codeWords * bp.numParts, 2u, 99u);
-    wnnc.attach(&vec);
-    wnnc.train();
-    wnnc.dump("space.txt");
+    std::cerr << sigs.col(0).transpose() << std::endl;
+    clsf.forwardNormWhite(&sigs, &np2, &wtf2, sigs.rows());
+    std::cerr << sigs.col(0).transpose() << std::endl;
+    clsf.inverseNormWhite(&sigs, np2, wtf2, sigs.rows());
+    std::cerr << sigs.col(0).transpose() << std::endl;
 
 
     PCAWhitening<float> pca(bp.featureSize);

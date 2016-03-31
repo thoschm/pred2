@@ -32,8 +32,8 @@ struct BOFParameters
 
     BOFParameters() : windowSize(515u),
                       featureSize(16u),
-                      codeWords(10u),
-                      numParts(4u),
+                      codeWords(3u),
+                      numParts(2u),
                       scalingMin(20u),
                       scalingStep(10u),
                       lookAhead(50u),
@@ -94,6 +94,7 @@ public:
         collector.codeWords(words, normParams, whiteningTf, &features);
     }
 
+    /*
     void signatures(SampleVector *out,
                     const MatrixXt &words,
                     const NormParams<NumericalType> &normParams,
@@ -122,6 +123,58 @@ public:
             const uint last = i + mParams.windowSize - 1u;
             out->back().label = labelfunc(indata, last, last + mParams.lookAhead);
         }
+    }
+    */
+    void signatures(MatrixXt *features,
+                    const MatrixXt &words,
+                    const NormParams<NumericalType> &normParams,
+                    const WhiteningTransform<NumericalType> &whiteningTf,
+                    const std::vector<NumericalType> &indata) const
+    {
+        // init collector
+        SeriesCollector<NumericalType> collector(mParams.windowSize,
+                                                 mParams.featureSize,
+                                                 mParams.codeWords,
+                                                 mParams.numParts,
+                                                 mParams.waveletType,
+                                                 mParams.signatureSigma);
+
+        // create signatures
+        const uint limit = indata.size() - mParams.windowSize - mParams.lookAhead;
+        const uint sigsize = mParams.codeWords * mParams.numParts;
+
+        // prepare
+        features->resize(sigsize, limit + 1u);
+        features->setZero();
+        VectorXt tmp(sigsize);
+        for (uint i = 0; i <= limit; ++i)
+        {
+            collector.signature(&tmp, normParams, whiteningTf, indata, words, i);
+            features->col(i) = tmp;
+        }
+    }
+
+    void forwardNormWhite(MatrixXt *data, NormParams<NumericalType> *norm, WhiteningTransform<NumericalType> *wtf, const uint dim)
+    {
+        Normalization<NumericalType> elemnorm(dim);
+        std::cerr << "compute normalization params..." << std::endl;
+        elemnorm.computeParams(norm, *data);
+        std::cout << "apply normalization..." << std::endl;
+        elemnorm.applyParamsInPlace(data, *norm);
+        std::cerr << "compute whitening transform..." << std::endl;
+        PCAWhitening<NumericalType> pca(dim);
+        pca.computeTransform(wtf, *data);
+        std::cout << "apply whitening..." << std::endl;
+        pca.applyTransformInPlace(data, *wtf);
+    }
+
+    void inverseNormWhite(MatrixXt *data, const NormParams<NumericalType> &norm, const WhiteningTransform<NumericalType> &wtf, const uint dim)
+    {
+        std::cerr << "inverse whitening and inverse normalization..." << std::endl;
+        PCAWhitening<float> pca(dim);
+        pca.inverseTransformInPlace(data, wtf);
+        Normalization<float> elemnorm(dim);
+        elemnorm.inverseParamsInPlace(data, norm);
     }
 
 private:
