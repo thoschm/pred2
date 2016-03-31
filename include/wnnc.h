@@ -67,7 +67,7 @@ public:
     WeightedNNClassifier(const uint dim,
                          const uint categories,
                          const uint N = 17u,
-                         const NumericalType gamma = (NumericalType)3.0) : mDim(dim),
+                         const NumericalType gamma = (NumericalType)2.0) : mDim(dim),
                                                                            mCateg(categories),
                                                                            mN(N), mGamma(gamma),
                                                                            mContainer(NULL),

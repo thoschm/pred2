@@ -78,7 +78,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 }
 
 
-#define SAMPLES 10000u
+#define SAMPLES 20000u
 
 /*
 #define K 10u
@@ -100,18 +100,18 @@ uint labelfunc(const std::vector<float> &data, const uint last, const uint ahead
 int main(int argc, char **argv)
 {
     std::vector<float> indata, interp;
-    loadSequence(&indata, "chart.txt");
+    //loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
         //indata.push_back((i % 7 == 0) ? 2.0 : 5.0);
-        //indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
 
 
     const uint halfsize = 0.7 * indata.size();
-    std::vector<float> traindata = indata;//(indata.begin(), indata.begin() + halfsize);
-    std::vector<float> veridata = indata;//(indata.begin() + halfsize, indata.end());
+    std::vector<float> traindata(indata.begin(), indata.begin() + halfsize);
+    std::vector<float> veridata(indata.begin() + halfsize, indata.end());
     dumpSequence(traindata, "traindata.txt");
     dumpSequence(veridata, "veridata.txt");
 
@@ -128,12 +128,13 @@ int main(int argc, char **argv)
 
     NormParams<float> np2(sigs.rows());
     WhiteningTransform<float> wtf2(sigs.rows());
-    clsf.forwardNormWhite(&sigs, &np2, &wtf2, sigs.rows());
+    clsf.computeNormWhite(&sigs, &np2, &wtf2, sigs.rows());
+   // std::cout << sigs.transpose() << std::endl;
 
     std::vector<uint> label;
     clsf.labels(&label, traindata, labelfunc);
 
-    WeightedNNClassifier<float> wnnc(bp.codeWords * bp.numParts, 2u, 99u);
+    WeightedNNClassifier<float> wnnc(bp.codeWords * bp.numParts, 2u, 9u);
     wnnc.attach(&sigs, &label);
     std::cerr << "train..." << std::endl;
     wnnc.train();
@@ -141,7 +142,54 @@ int main(int argc, char **argv)
     wnnc.dump("space.txt");
 
 
+    const uint limit = veridata.size() - bp.windowSize - bp.lookAhead;
+    std::vector<float> outvec(veridata.size(), 0.0f),
+                       wrong(veridata.size(), 0.0f);
+    uint all = 0,
+         correct = 0;
+    for (uint i = 0; i <= limit; ++i)
+    {
+        BOFClassifier<float>::MatrixXt sig;
+        clsf.signature(&sig, words, normparams, whiteningtf, veridata, i);
+        clsf.forwardNormWhite(&sig, np2, wtf2, sigs.rows());
 
+        BOFClassifier<float>::VectorXt tmp = sig.col(0);
+        //std::cout << tmp.transpose() << std::endl;
+        ClassificationResult<float> res = wnnc.classify(tmp);
+        std::cout << res.category << " " << res.confidence;
+        //if (res.confidence < 95.0) continue;
+        if (veridata[i + bp.windowSize - 1] < veridata[i + bp.windowSize + bp.lookAhead - 1])
+        {
+            if (res.category == 1u)
+            {
+                std::cout << "!";
+                outvec[i + bp.windowSize + bp.lookAhead - 1] = veridata[i + bp.windowSize + bp.lookAhead - 1];
+                ++correct;
+            }
+            else
+            {
+                wrong[i + bp.windowSize + bp.lookAhead - 1] = veridata[i + bp.windowSize + bp.lookAhead - 1];
+            }
+        }
+        else
+        {
+            if (res.category == 0u)
+            {
+                std::cout << "!";
+                outvec[i + bp.windowSize + bp.lookAhead - 1] = veridata[i + bp.windowSize + bp.lookAhead - 1];
+                ++correct;
+            }
+            else
+            {
+                wrong[i + bp.windowSize + bp.lookAhead - 1] = veridata[i + bp.windowSize + bp.lookAhead - 1];
+            }
+        }
+        ++all;
+        std::cerr << std::endl;
+    }
+    std::cout << "CORRECT: " << correct << "/" << all << " (" << (100.0 * correct / all) << "%)" << std::endl;
+    dumpSequence(outvec, "correct.txt");
+    dumpSequence(wrong, "wrong.txt");
 
 
     PCAWhitening<float> pca(bp.featureSize);
@@ -166,175 +214,5 @@ int main(int argc, char **argv)
     }
     ofs.close();
 
-/*
-
-    return 0;
-
-
-    SeriesCollector<float> collector(WINDOW, FEATURE, K, PARTS, (WaveletType)WAVELET);
-    SeriesCollector<float>::MatrixXt features;
-    SeriesCollector<float>::MatrixXt words(FEATURE, K);
-
-    WhiteningTransform<float> wt(FEATURE);
-    NormParams<float> np(FEATURE);
-    collector.append(&features, traindata);
-    collector.codeWords(&words, &np, &wt, &features);
-    std::cerr << words.transpose() << std::endl << std::endl;
-
-    SeriesCollector<float>::VectorXt hist(K * PARTS);
-    collector.signature(&hist, np, wt, indata, words, INDEX);
-    std::cerr << "signature:\n" << hist.transpose() << std::endl;
-
-    collector.dumpBasisActivation("sig.txt", "act.txt", indata, words, hist, np, wt, INDEX);
-
-
-    // create labeled samples
-    uint limit = traindata.size() - WINDOW - AHEAD;
-    std::vector<Sample<float> > vec;
-    for (uint i = 0; i <= limit; ++i)
-    {
-        vec.push_back(Sample<float>(K * PARTS));
-        collector.signature(&(vec.back().signature), np, wt, traindata, words, i);
-        std::cerr << ".";
-        if (traindata[i + WINDOW - 1] < traindata[i + WINDOW + AHEAD - 1])
-        {
-            vec.back().label = 1;
-        }
-        else
-        {
-            vec.back().label = 0;
-        }
-    }
-    std::cerr << std::endl;
-
-    WeightedNNClassifier<float> wnnc(K * PARTS, 2u, 99u);
-    wnnc.attach(&vec);
-    wnnc.train();
-    wnnc.dump("space.txt");
-
-    limit = veridata.size() - WINDOW - AHEAD;
-    std::vector<float> outvec(veridata.size(), 0.0f),
-                       wrong(veridata.size(), 0.0f);
-    uint all = 0,
-         correct = 0;
-    for (uint i = 0; i <= limit; ++i)
-    {
-        Sample<float> sa(K * PARTS);
-        collector.signature(&(sa.signature), np, wt, veridata, words, i);
-        ClassificationResult<float> res = wnnc.classify(sa);
-        std::cout << res.category << " " << res.confidence;
-        //if (res.confidence < 95.0) continue;
-        if (veridata[i + WINDOW - 1] < veridata[i + WINDOW + AHEAD - 1])
-        {
-            if (res.category == 1u)
-            {
-                std::cerr << "!";
-                outvec[i + WINDOW + AHEAD - 1] = veridata[i + WINDOW + AHEAD - 1];
-                ++correct;
-            }
-            else
-            {
-                wrong[i + WINDOW + AHEAD - 1] = veridata[i + WINDOW + AHEAD - 1];
-            }
-        }
-        else
-        {
-            if (res.category == 0u)
-            {
-                std::cerr << "!";
-                outvec[i + WINDOW + AHEAD - 1] = veridata[i + WINDOW + AHEAD - 1];
-                ++correct;
-            }
-            else
-            {
-                wrong[i + WINDOW + AHEAD - 1] = veridata[i + WINDOW + AHEAD - 1];
-            }
-        }
-        ++all;
-        std::cerr << std::endl;
-    }
-    std::cout << "CORRECT: " << correct << "/" << all << " (" << (100.0 * correct / all) << "%)" << std::endl;
-    dumpSequence(outvec, "correct.txt");
-    dumpSequence(wrong, "wrong.txt");
-
-    std::ofstream ofs;
-   ofs.open("centroids.txt", std::ios::out);
-    ofs << words.transpose() << std::endl;
-    ofs.close();
-
-
-
-    PCAWhitening<float> pca(FEATURE);
-    pca.inverseTransformInPlace(&words, wt);
-    //std::cerr << words.transpose() << std::endl;
-    Normalization<float> elemnorm(FEATURE);
-    elemnorm.inverseParamsInPlace(&words, np);
-
-
-    float s[WAVELET], w[WAVELET];
-    WaveletCoefficients<float>::lookup((WaveletType)WAVELET, s, w);
-    FastDWT<float> dwt(FEATURE);
-    ofs.open("words.txt", std::ios::out);
-    for (uint k = 0; k < K; ++k)
-    {
-        dwt.inverse(words.col(k).data(), s, w, WAVELET);
-        for (uint l = 0; l < FEATURE; ++l)
-        {
-            ofs << l << " " << words(l, k) << std::endl;
-        }
-        ofs << std::endl;
-    }
-    ofs.close();
-
-
-
-    std::ofstream ofs;
-    ofs.open("words.txt", std::ios::out);
-    for (uint k = 0; k < K; ++k)
-    {
-        for (uint l = 0; l < FEATURE; ++l)
-        {
-            ofs << l << " " << words(l, k) << std::endl;
-        }
-        ofs << std::endl;
-    }
-    ofs.close();
-
-
-    NormalDistGenerator<float> n;
-    KMeans<float>::MatrixXt mat(3, 2000);
-    for (uint i = 0; i < 1000u; ++i)
-    {
-        for (uint k = 0; k < mat.rows(); ++k)
-        {
-            mat(k, i) = n.rand();
-        }
-    }
-    for (uint i = 1000; i < 2000u; ++i)
-    {
-        for (uint k = 0; k < mat.rows(); ++k)
-        {
-            mat(k, i) = n.rand() + 10.0f;
-        }
-    }
-
-
-    dumpMatrix(mat, "mat.txt");
-    PCAWhitening<float> pca(3);
-    WhiteningTransform<float> wt(3);
-    pca.computeTransform(&wt, mat);
-    pca.applyTransformInPlace(&mat, wt);
-
-    KMeans<float> kmeans(3, 4, 50);
-    std::vector<uint> freq;
-    KMeans<float>::MatrixXt centers(3, 4);
-    kmeans.compute(&centers, &freq, mat);
-    dumpMatrix(centers, "wcenter.txt");
-
-    dumpMatrix(mat, "white.txt");
-    pca.inverseTransformInPlace(&centers, wt);
-    dumpMatrix(centers, "invcenter.txt");
-
-    */
     return 0;
 }

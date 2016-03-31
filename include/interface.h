@@ -30,9 +30,9 @@ struct BOFParameters
     FilterType filterType;
     float signatureSigma;
 
-    BOFParameters() : windowSize(515u),
+    BOFParameters() : windowSize(615u),
                       featureSize(16u),
-                      codeWords(10u),
+                      codeWords(5u),
                       numParts(4u),
                       scalingMin(50u),
                       scalingStep(10u),
@@ -114,6 +114,7 @@ public:
                     const WhiteningTransform<NumericalType> &whiteningTf,
                     const std::vector<NumericalType> &indata) const
     {
+        // TODODODODDO: scaling!!!
         // init collector
         SeriesCollector<NumericalType> collector(mParams.windowSize,
                                                  mParams.featureSize,
@@ -160,7 +161,7 @@ public:
         sig->col(0) = tmp;
     }
 
-    void forwardNormWhite(MatrixXt *data, NormParams<NumericalType> *norm, WhiteningTransform<NumericalType> *wtf, const uint dim)
+    void computeNormWhite(MatrixXt *data, NormParams<NumericalType> *norm, WhiteningTransform<NumericalType> *wtf, const uint dim)
     {
         Normalization<NumericalType> elemnorm(dim);
         std::cerr << "compute normalization params..." << std::endl;
@@ -172,6 +173,14 @@ public:
         pca.computeTransform(wtf, *data);
         std::cout << "apply whitening..." << std::endl;
         pca.applyTransformInPlace(data, *wtf);
+    }
+
+    void forwardNormWhite(MatrixXt *data, const NormParams<NumericalType> &norm, const WhiteningTransform<NumericalType> &wtf, const uint dim)
+    {
+        Normalization<NumericalType> elemnorm(dim);
+        elemnorm.applyParamsInPlace(data, norm);
+        PCAWhitening<NumericalType> pca(dim);
+        pca.applyTransformInPlace(data, wtf);
     }
 
     void inverseNormWhite(MatrixXt *data, const NormParams<NumericalType> &norm, const WhiteningTransform<NumericalType> &wtf, const uint dim)
