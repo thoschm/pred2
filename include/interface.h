@@ -30,11 +30,11 @@ struct BOFParameters
     FilterType filterType;
     float signatureSigma;
 
-    BOFParameters() : windowSize(615u),
+    BOFParameters() : windowSize(515u),
                       featureSize(16u),
-                      codeWords(5u),
-                      numParts(4u),
-                      scalingMin(50u),
+                      codeWords(10u),
+                      numParts(5u),
+                      scalingMin(30u),
                       scalingStep(10u),
                       lookAhead(50u),
                       waveletType(D8_WAVELET),
@@ -97,14 +97,32 @@ public:
                 const std::vector<NumericalType> &indata,
                 uint (*const labelfunc)(const std::vector<NumericalType> &, const uint, const uint)) const
     {
-        // create signatures
-        const uint limit = indata.size() - mParams.windowSize - mParams.lookAhead;
-        out->clear();
-        out->resize(limit + 1u);
-        for (uint i = 0; i <= limit; ++i)
+        // compute cols
+        uint cols = 0;
+        for (int s = 100; s >= (int)mParams.scalingMin; s -= (int)mParams.scalingStep)
         {
-            const uint last = i + mParams.windowSize - 1u;
-            out->at(i) = labelfunc(indata, last, last + mParams.lookAhead);
+            const uint samples = (NumericalType)0.01 * (NumericalType)s * (NumericalType)indata.size();
+            const uint limit = samples - mParams.windowSize - mParams.lookAhead;
+            cols += limit + 1u;
+        }
+        out->clear();
+        out->resize(cols);
+        uint cnt = 0;
+        std::cerr << "computing labels..." << std::endl;
+        for (int s = 100; s >= (int)mParams.scalingMin; s -= (int)mParams.scalingStep)
+        {
+            std::cout << s << "% scaling..." << std::endl;
+            std::vector<NumericalType> tmp;
+            const uint samples = (NumericalType)0.01 * (NumericalType)s * (NumericalType)indata.size();
+            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType);
+            const uint limit = samples - mParams.windowSize - mParams.lookAhead;
+
+            // compute labels
+            for (uint i = 0; i <= limit; ++i)
+            {
+                const uint last = i + mParams.windowSize - 1u;
+                out->at(cnt++) = labelfunc(tmp, last, last + mParams.lookAhead);
+            }
         }
     }
 
@@ -114,7 +132,6 @@ public:
                     const WhiteningTransform<NumericalType> &whiteningTf,
                     const std::vector<NumericalType> &indata) const
     {
-        // TODODODODDO: scaling!!!
         // init collector
         SeriesCollector<NumericalType> collector(mParams.windowSize,
                                                  mParams.featureSize,
@@ -124,18 +141,41 @@ public:
                                                  mParams.signatureSigma);
 
         // create signatures
-        const uint limit = indata.size() - mParams.windowSize - mParams.lookAhead;
         const uint sigsize = mParams.codeWords * mParams.numParts;
 
-        // prepare
-        features->resize(sigsize, limit + 1u);
-        features->setZero();
-        VectorXt tmp(sigsize);
-        for (uint i = 0; i <= limit; ++i)
+        // compute cols
+        uint cols = 0;
+        for (int s = 100; s >= (int)mParams.scalingMin; s -= (int)mParams.scalingStep)
         {
-            collector.signature(&tmp, normParams, whiteningTf, indata, words, i);
-            features->col(i) = tmp;
+            const uint samples = (NumericalType)0.01 * (NumericalType)s * (NumericalType)indata.size();
+            const uint limit = samples - mParams.windowSize - mParams.lookAhead;
+            cols += limit + 1u;
         }
+
+        // prepare
+        features->resize(sigsize, cols);
+        features->setZero();
+
+        // loop different scaling intervals
+        VectorXt onesig(sigsize);
+        uint cnt = 0;
+        std::cerr << "computing signatures..." << std::endl;
+        for (int s = 100; s >= (int)mParams.scalingMin; s -= (int)mParams.scalingStep)
+        {
+            std::cout << s << "% scaling..." << std::endl;
+            std::vector<NumericalType> tmp;
+            const uint samples = (NumericalType)0.01 * (NumericalType)s * (NumericalType)indata.size();
+            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType);
+            const uint limit = samples - mParams.windowSize - mParams.lookAhead;
+
+            // compute sigs
+            for (uint i = 0; i <= limit; ++i)
+            {
+                collector.signature(&onesig, normParams, whiteningTf, tmp, words, i);
+                features->col(cnt++) = onesig;
+            }
+        }
+        //std::cerr << "cols " << cols << "   cnt " << cnt << std::endl;
     }
 
     void signature(MatrixXt *sig,

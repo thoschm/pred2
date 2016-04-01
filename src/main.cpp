@@ -100,18 +100,18 @@ uint labelfunc(const std::vector<float> &data, const uint last, const uint ahead
 int main(int argc, char **argv)
 {
     std::vector<float> indata, interp;
-    //loadSequence(&indata, "chart.txt");
+    loadSequence(&indata, "chart.txt");
     for (uint i = 0; i < SAMPLES; ++i)
     {
         //indata.push_back((i % 7 == 0) ? 2.0 : 5.0);
-        indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
+        //indata.push_back(sqrt(i) + std::sin(0.1 * i) + std::sin(0.05 * (i + 17)) * std::cos(0.02 * (i + 23)) + 0.01f * i + 5.0f * std::sin(0.01f * (i + 100)));
         //indata.push_back(i);
     }
 
 
     const uint halfsize = 0.7 * indata.size();
-    std::vector<float> traindata(indata.begin(), indata.begin() + halfsize);
-    std::vector<float> veridata(indata.begin() + halfsize, indata.end());
+    std::vector<float> traindata = indata;//(indata.begin(), indata.begin() + halfsize);
+    std::vector<float> veridata = indata;//(indata.begin() + halfsize, indata.end());
     dumpSequence(traindata, "traindata.txt");
     dumpSequence(veridata, "veridata.txt");
 
