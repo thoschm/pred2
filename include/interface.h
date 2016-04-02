@@ -30,12 +30,12 @@ struct BOFParameters
     FilterType filterType;
     float signatureSigma;
 
-    BOFParameters() : windowSize(515u),
-                      featureSize(16u),
+    BOFParameters() : windowSize(531u),
+                      featureSize(32u),
                       codeWords(10u),
                       numParts(5u),
-                      scalingMin(30u),
-                      scalingStep(10u),
+                      scalingMin(100u),
+                      scalingStep(20u),
                       lookAhead(50u),
                       waveletType(D8_WAVELET),
                       filterType(LANCZOS8),

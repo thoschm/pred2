@@ -78,7 +78,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 }
 
 
-#define SAMPLES 20000u
+#define SAMPLES 10000u
 
 /*
 #define K 10u
@@ -109,9 +109,9 @@ int main(int argc, char **argv)
     }
 
 
-    const uint halfsize = 0.7 * indata.size();
-    std::vector<float> traindata = indata;//(indata.begin(), indata.begin() + halfsize);
-    std::vector<float> veridata = indata;//(indata.begin() + halfsize, indata.end());
+    const uint halfsize = 0.6 * indata.size();
+    std::vector<float> traindata(indata.begin(), indata.begin() + halfsize);
+    std::vector<float> veridata(indata.begin() + halfsize, indata.end());
     dumpSequence(traindata, "traindata.txt");
     dumpSequence(veridata, "veridata.txt");
 
@@ -147,6 +147,8 @@ int main(int argc, char **argv)
                        wrong(veridata.size(), 0.0f);
     uint all = 0,
          correct = 0;
+    BOFClassifier<float>::MatrixXt failed(sigs.rows(), 10);
+    uint fcount = 0;
     for (uint i = 0; i <= limit; ++i)
     {
         BOFClassifier<float>::MatrixXt sig;
@@ -156,8 +158,8 @@ int main(int argc, char **argv)
         BOFClassifier<float>::VectorXt tmp = sig.col(0);
         //std::cout << tmp.transpose() << std::endl;
         ClassificationResult<float> res = wnnc.classify(tmp);
+        //if (res.confidence < 75.0) continue;
         std::cout << res.category << " " << res.confidence;
-        //if (res.confidence < 95.0) continue;
         if (veridata[i + bp.windowSize - 1] < veridata[i + bp.windowSize + bp.lookAhead - 1])
         {
             if (res.category == 1u)
@@ -169,6 +171,7 @@ int main(int argc, char **argv)
             else
             {
                 wrong[i + bp.windowSize + bp.lookAhead - 1] = veridata[i + bp.windowSize + bp.lookAhead - 1];
+                if (fcount < 10) failed.col(fcount++) = tmp;
             }
         }
         else
@@ -182,6 +185,7 @@ int main(int argc, char **argv)
             else
             {
                 wrong[i + bp.windowSize + bp.lookAhead - 1] = veridata[i + bp.windowSize + bp.lookAhead - 1];
+                if (fcount < 10) failed.col(fcount++) = tmp;
             }
         }
         ++all;
@@ -190,6 +194,7 @@ int main(int argc, char **argv)
     std::cout << "CORRECT: " << correct << "/" << all << " (" << (100.0 * correct / all) << "%)" << std::endl;
     dumpSequence(outvec, "correct.txt");
     dumpSequence(wrong, "wrong.txt");
+    dumpMatrix(failed, "failed.txt");
 
 
     PCAWhitening<float> pca(bp.featureSize);
