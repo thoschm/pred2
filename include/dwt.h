@@ -21,6 +21,7 @@ namespace BOF
 ////////////////////////////////////
 enum WaveletType
 {
+    NO_WAVELET = 1, // DISABLE DWT
     D2_WAVELET = 2, // HAAR
     D4_WAVELET = 4,
     D6_WAVELET = 6,
@@ -95,6 +96,10 @@ public:
             waveletfilter[6] =  scalingfilter[1];
             waveletfilter[7] = -scalingfilter[0];
         }
+        else if (type == NO_WAVELET)
+        {
+            return true;
+        }
         else
         {
             std::cerr << "wavelet type not supported." << std::endl;
@@ -155,6 +160,8 @@ public:
                  const NumericalType *waveletfilter,
                  const uint fcnt)
     {
+        if (fcnt <= 1u) return true;
+
         // forward fdwt
         for (uint window = mWindow; window >= 2u; window >>= 1)
         {
@@ -182,6 +189,8 @@ public:
                  const NumericalType *waveletfilter,
                  const uint fcnt)
     {
+        if (fcnt <= 1u) return true;
+
         // inverse fdwt
         const uint fwindow = fcnt - 1u;
         for (uint window = 2u; window <= mWindow; window <<= 1)
