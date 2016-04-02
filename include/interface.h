@@ -25,18 +25,20 @@ struct BOFParameters
          numParts,
          scalingMin,
          scalingStep,
-         lookAhead;
+         lookAhead,
+         boxSmooth;
     WaveletType waveletType;
     FilterType filterType;
     float signatureSigma;
 
-    BOFParameters() : windowSize(131u),
-                      featureSize(32u),
-                      codeWords(10u),
-                      numParts(5u),
-                      scalingMin(100u),
-                      scalingStep(20u),
-                      lookAhead(5u),
+    BOFParameters() : windowSize(515u),
+                      featureSize(16u),
+                      codeWords(5u),
+                      numParts(2u),
+                      scalingMin(40u),
+                      scalingStep(10u),
+                      lookAhead(50u),
+                      boxSmooth(2u),
                       waveletType(D8_WAVELET),
                       filterType(LANCZOS8),
                       signatureSigma(1.0f)
@@ -85,7 +87,7 @@ public:
             std::cout << s << "% scaling:" << std::endl;
             std::vector<NumericalType> tmp;
             const uint samples = (NumericalType)0.01 * (NumericalType)s * (NumericalType)indata.size();
-            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType);
+            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType, mParams.boxSmooth);
             collector.append(&features, tmp);
         }
 
@@ -114,7 +116,7 @@ public:
             std::cout << s << "% scaling..." << std::endl;
             std::vector<NumericalType> tmp;
             const uint samples = (NumericalType)0.01 * (NumericalType)s * (NumericalType)indata.size();
-            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType);
+            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType, mParams.boxSmooth);
             const uint limit = samples - mParams.windowSize - mParams.lookAhead;
 
             // compute labels
@@ -165,7 +167,7 @@ public:
             std::cout << s << "% scaling..." << std::endl;
             std::vector<NumericalType> tmp;
             const uint samples = (NumericalType)0.01 * (NumericalType)s * (NumericalType)indata.size();
-            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType);
+            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType, mParams.boxSmooth);
             const uint limit = samples - mParams.windowSize - mParams.lookAhead;
 
             // compute sigs

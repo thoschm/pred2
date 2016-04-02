@@ -104,18 +104,37 @@ public:
         return sum;
     }
 
+    static void boxsmooth(std::vector<NumericalType> *out,
+                          const std::vector<NumericalType> &samples,
+                          const uint boxsize)
+    {
+        out->clear();
+        out->resize(samples.size() - boxsize + 1u);
+        for (uint i = 0; i < out->size(); ++i)
+        {
+            NumericalType sum = (NumericalType)0.0;
+            for (uint k = 0; k < boxsize; ++k)
+            {
+                sum += samples[i + k];
+            }
+            out->at(i) = sum / boxsize;
+        }
+    }
+
     static void resize(std::vector<NumericalType> *out,
                        const uint outSamples,
                        const std::vector<NumericalType> &samples,
-                       const FilterType type)
+                       const FilterType type,
+                       const uint boxsize)
     {
-        out->clear();
-        out->resize(outSamples);
-        const NumericalType step = (NumericalType)samples.size() / (NumericalType)outSamples;
-        for (uint i = 0; i < outSamples; ++i)
+        std::vector<NumericalType> tmp;
+        tmp.resize(outSamples + boxsize - 1u);
+        const NumericalType step = (NumericalType)samples.size() / (NumericalType)tmp.size();
+        for (uint i = 0; i < tmp.size(); ++i)
         {
-            out->at(i) = peek(samples, type, step * (NumericalType)i);
+            tmp[i] = peek(samples, type, step * (NumericalType)i);
         }
+        boxsmooth(out, tmp, boxsize);
     }
 };
 

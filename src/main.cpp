@@ -111,9 +111,9 @@ int main(int argc, char **argv)
 
     const uint halfsize = 0.6 * indata.size();
     std::vector<float> traindata(indata.begin(), indata.begin() + halfsize);
-    std::vector<float> veridata(indata.begin() + halfsize, indata.end());
+    std::vector<float> rest(indata.begin() + halfsize, indata.end());
     dumpSequence(traindata, "traindata.txt");
-    dumpSequence(veridata, "veridata.txt");
+    dumpSequence(rest, "veridata.txt");
 
     BOFParameters bp;
     BOFClassifier<float>::MatrixXt words(bp.featureSize, bp.codeWords);
@@ -141,13 +141,14 @@ int main(int argc, char **argv)
     std::cerr << "dump..." << std::endl;
     wnnc.dump("space.txt");
 
-
+    std::vector<float> veridata;
+    Interpolator<float>::resize(&veridata, rest.size(), rest, bp.filterType, bp.boxSmooth);
     const uint limit = veridata.size() - bp.windowSize - bp.lookAhead;
     std::vector<float> outvec(veridata.size(), 0.0f),
                        wrong(veridata.size(), 0.0f);
     uint all = 0,
          correct = 0;
-    BOFClassifier<float>::MatrixXt failed(sigs.rows(), 10);
+    BOFClassifier<float>::MatrixXt failed(sigs.rows(), 100);
     uint fcount = 0;
     for (uint i = 0; i <= limit; ++i)
     {
@@ -158,7 +159,7 @@ int main(int argc, char **argv)
         BOFClassifier<float>::VectorXt tmp = sig.col(0);
         //std::cout << tmp.transpose() << std::endl;
         ClassificationResult<float> res = wnnc.classify(tmp);
-        //if (res.confidence < 75.0) continue;
+        if (res.confidence < 100.0) continue;
         std::cout << res.category << " " << res.confidence;
         if (veridata[i + bp.windowSize - 1] < veridata[i + bp.windowSize + bp.lookAhead - 1])
         {
@@ -171,7 +172,7 @@ int main(int argc, char **argv)
             else
             {
                 wrong[i + bp.windowSize + bp.lookAhead - 1] = veridata[i + bp.windowSize + bp.lookAhead - 1];
-                if (fcount < 10) failed.col(fcount++) = tmp;
+                if (fcount < 100) failed.col(fcount++) = tmp;
             }
         }
         else
@@ -185,7 +186,7 @@ int main(int argc, char **argv)
             else
             {
                 wrong[i + bp.windowSize + bp.lookAhead - 1] = veridata[i + bp.windowSize + bp.lookAhead - 1];
-                if (fcount < 10) failed.col(fcount++) = tmp;
+                if (fcount < 100) failed.col(fcount++) = tmp;
             }
         }
         ++all;
