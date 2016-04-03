@@ -32,14 +32,14 @@ struct BOFParameters
     float signatureSigma;
     bool useStationarySignal;
 
-    BOFParameters() : windowSize(531u),
-                      featureSize(32u),
+    BOFParameters() : windowSize(815u),
+                      featureSize(16u),
                       codeWords(10u),
                       numParts(5u),
-                      scalingMin(100u),
-                      scalingStep(10u),
-                      lookAhead(50u),
-                      boxSmooth(10u),
+                      scalingMin(40u),
+                      scalingStep(20u),
+                      lookAhead(100u),
+                      boxSmooth(20u),
                       waveletType(D8_WAVELET),
                       filterType(LANCZOS8),
                       signatureSigma(1.0f),
@@ -118,7 +118,7 @@ public:
             std::cout << s << "% scaling..." << std::endl;
             std::vector<NumericalType> tmp;
             const uint samples = (NumericalType)0.01 * (NumericalType)s * (NumericalType)indata.size();
-            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType, mParams.boxSmooth, mParams.useStationarySignal);
+            Interpolator<NumericalType>::resize(&tmp, samples, indata, mParams.filterType, mParams.boxSmooth, false);
             const uint limit = samples - mParams.windowSize - mParams.lookAhead;
 
             // compute labels

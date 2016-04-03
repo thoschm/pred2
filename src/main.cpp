@@ -139,9 +139,10 @@ int main(int argc, char **argv)
     wnnc.train();
     std::cerr << "dump..." << std::endl;
     wnnc.dump("space.txt");
-/*
-    std::vector<float> veridata;
-    Interpolator<float>::resize(&veridata, rest.size(), rest, bp.filterType, bp.boxSmooth, bp.useStationarySignal);
+
+    std::vector<float> veridata, stationary;
+    Interpolator<float>::resize(&stationary, rest.size(), rest, bp.filterType, bp.boxSmooth, bp.useStationarySignal);
+    Interpolator<float>::resize(&veridata, rest.size(), rest, bp.filterType, bp.boxSmooth, false);
     const uint limit = veridata.size() - bp.windowSize - bp.lookAhead;
     std::vector<float> outvec(veridata.size(), 0.0f),
                        wrong(veridata.size(), 0.0f);
@@ -152,13 +153,13 @@ int main(int argc, char **argv)
     for (uint i = 0; i <= limit; ++i)
     {
         BOFClassifier<float>::MatrixXt sig;
-        clsf.signature(&sig, words, normparams, whiteningtf, veridata, i);
+        clsf.signature(&sig, words, normparams, whiteningtf, stationary, i);
         clsf.forwardNormWhite(&sig, np2, wtf2, sigs.rows());
 
         BOFClassifier<float>::VectorXt tmp = sig.col(0);
         //std::cout << tmp.transpose() << std::endl;
         ClassificationResult<float> res = wnnc.classify(tmp);
-        if (res.confidence < 100.0) continue;
+        if (res.confidence < 90.0) continue;
         std::cout << res.category << " " << res.confidence;
         if (veridata[i + bp.windowSize - 1] < veridata[i + bp.windowSize + bp.lookAhead - 1])
         {
@@ -190,12 +191,12 @@ int main(int argc, char **argv)
         }
         ++all;
         std::cerr << std::endl;
+        std::cout << "CORRECT: " << correct << "/" << all << " (" << (100.0 * correct / all) << "%)" << std::endl;
     }
-    std::cout << "CORRECT: " << correct << "/" << all << " (" << (100.0 * correct / all) << "%)" << std::endl;
     dumpSequence(outvec, "correct.txt");
     dumpSequence(wrong, "wrong.txt");
     dumpMatrix(failed, "failed.txt");
-*/
+
 
     PCAWhitening<float> pca(bp.featureSize);
     pca.inverseTransformInPlace(&words, whiteningtf);

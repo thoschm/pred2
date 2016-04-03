@@ -332,7 +332,7 @@ private:
 
         // clustering
         std::cout << "clustering..." << std::endl;
-        KMeans<NumericalType> kmeans(mDim, mK, 10u * mK, (NumericalType)1e-5, 20u);
+        KMeans<NumericalType> kmeans(mDim, mK, 10u * mK, (NumericalType)1e-5, 200u);
         std::vector<uint> freq;
         kmeans.compute(words, &freq, *indata);
         for (uint i = 0; i < mK; ++i)
