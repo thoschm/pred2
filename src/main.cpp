@@ -78,7 +78,7 @@ bool dumpMatrix(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen
 }
 
 
-#define SAMPLES 10000u
+#define SAMPLES 20000u
 
 /*
 #define K 10u
@@ -108,8 +108,7 @@ int main(int argc, char **argv)
         //indata.push_back(i);
     }
 
-
-    const uint halfsize = 0.6 * indata.size();
+    const uint halfsize = 0.7 * indata.size();
     std::vector<float> traindata(indata.begin(), indata.begin() + halfsize);
     std::vector<float> rest(indata.begin() + halfsize, indata.end());
     dumpSequence(traindata, "traindata.txt");
@@ -140,9 +139,9 @@ int main(int argc, char **argv)
     wnnc.train();
     std::cerr << "dump..." << std::endl;
     wnnc.dump("space.txt");
-
+/*
     std::vector<float> veridata;
-    Interpolator<float>::resize(&veridata, rest.size(), rest, bp.filterType, bp.boxSmooth);
+    Interpolator<float>::resize(&veridata, rest.size(), rest, bp.filterType, bp.boxSmooth, bp.useStationarySignal);
     const uint limit = veridata.size() - bp.windowSize - bp.lookAhead;
     std::vector<float> outvec(veridata.size(), 0.0f),
                        wrong(veridata.size(), 0.0f);
@@ -196,7 +195,7 @@ int main(int argc, char **argv)
     dumpSequence(outvec, "correct.txt");
     dumpSequence(wrong, "wrong.txt");
     dumpMatrix(failed, "failed.txt");
-
+*/
 
     PCAWhitening<float> pca(bp.featureSize);
     pca.inverseTransformInPlace(&words, whiteningtf);

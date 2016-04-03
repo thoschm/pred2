@@ -80,11 +80,10 @@ public:
             return;
         }
 
-        const uint slimit = indata.size() - mSWindow, // series window
-                   flimit = mSWindow - mDim;          // feature window
+        const uint flimit = indata.size() - mDim; // feature window
 
         // this will need lots of memory
-        const uint cols = (slimit + 1u) * (flimit + 1u);
+        const uint cols = flimit + 1u;
         const uint prev = features->cols();
         features->conservativeResize(mDim, prev + cols);
         std::cerr << "columns appended: " << cols << std::endl;
@@ -94,23 +93,16 @@ public:
         NumericalType s[(uint)mWavelet], w[(uint)mWavelet];
         WaveletCoefficients<NumericalType>::lookup(mWavelet, s, w);
         FastDWT<NumericalType> dwt(mDim);
-        for (uint i = 0; i <= slimit; ++i)
+        for (uint i = 0; i <= flimit; ++i)
         {
-            // normalze current window to 0 - 1
-            NumericalType vmin, scale;
-            normalize(indata, i, &vmin, &scale);
-
-            // extract feature windows from normalized series window
-            for (uint k = 0; k <= flimit; ++k)
+            // extract features
+            const uint fidx = prev + cnt;
+            for (uint f = 0; f < mDim; ++f)
             {
-                const uint fidx = prev + cnt;
-                for (uint f = 0; f < mDim; ++f)
-                {
-                    (*features)(f, fidx) = scale * (indata[i + k + f] - vmin);
-                }
-                dwt.compute((*features).col(fidx).data(), s, w, (uint)mWavelet);
-                ++cnt;
+                (*features)(f, fidx) = indata[i + f];
             }
+            dwt.compute((*features).col(fidx).data(), s, w, (uint)mWavelet);
+            ++cnt;
         }
         std::cerr << "vectors seen: " << cnt << std::endl;
     }
@@ -218,10 +210,6 @@ public:
         // alloc
         MatrixXt features(mDim, cols);
 
-        // normalze current window to 0 - 1
-        NumericalType vmin, scale;
-        normalize(indata, pos, &vmin, &scale);
-
         // prepare
         PCAWhitening<NumericalType> pca(mDim);
         Normalization<NumericalType> elemnorm(mDim);
@@ -230,12 +218,12 @@ public:
         WaveletCoefficients<NumericalType>::lookup(mWavelet, s, w);
         FastDWT<NumericalType> dwt(mDim);
 
-        // extract feature windows from normalized series window
+        // extract features
         for (uint k = 0; k <= flimit; ++k)
         {
             for (uint f = 0; f < mDim; ++f)
             {
-                features(f, k) = scale * (indata[pos + k + f] - vmin);
+                features(f, k) = indata[pos + k + f];
             }
             dwt.compute(features.col(k).data(), s, w, (uint)mWavelet);
         }
@@ -351,37 +339,6 @@ private:
         {
             std::cerr << "cluster " << i << ": " << freq[i] << " supporters" << std::endl;
         }
-    }
-
-    // compute min max normalization
-    void normalize(const std::vector<NumericalType> &data,
-                   const uint startAt,
-                   NumericalType *minVal,
-                   NumericalType *scaling) const
-    {
-        // normalize data window to 0-1
-        NumericalType vmin = (NumericalType)FLT_MAX,
-                      vmax = (NumericalType)-FLT_MAX;
-        for (uint k = 0; k < mSWindow; ++k)
-        {
-            const uint idx = startAt + k;
-            if (data[idx] < vmin) vmin = data[idx];
-            if (data[idx] > vmax) vmax = data[idx];
-        }
-        NumericalType scale;
-        if (vmin == vmax)
-        {
-            scale = (NumericalType)1.0;
-            vmin -= (NumericalType)0.5;
-        }
-        else
-        {
-            scale = (NumericalType)1.0 / (vmax - vmin);
-        }
-
-        // commit
-        *minVal = vmin;
-        *scaling = scale;
     }
 
     // vars

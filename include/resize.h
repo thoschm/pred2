@@ -121,11 +121,27 @@ public:
         }
     }
 
+    static void makeStationary(std::vector<NumericalType> *data)
+    {
+        for (uint i = data->size() - 1u; i >= 1u; --i)
+        {
+            const NumericalType last = data->at(i - 1u);
+            if (last < (NumericalType)1e-3)
+            {
+                data->at(i) = (NumericalType)0.0;
+                continue;
+            }
+            data->at(i) = (NumericalType)100.0 * (data->at(i) - last) / last;
+        }
+        data->at(0) = (NumericalType)0.0;
+    }
+
     static void resize(std::vector<NumericalType> *out,
                        const uint outSamples,
                        const std::vector<NumericalType> &samples,
                        const FilterType type,
-                       const uint boxsize)
+                       const uint boxsize,
+                       const bool stationary)
     {
         std::vector<NumericalType> tmp;
         tmp.resize(outSamples + boxsize - 1u);
@@ -135,6 +151,10 @@ public:
             tmp[i] = peek(samples, type, step * (NumericalType)i);
         }
         boxsmooth(out, tmp, boxsize);
+        if (stationary)
+        {
+            makeStationary(out);
+        }
     }
 };
 
